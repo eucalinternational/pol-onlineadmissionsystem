@@ -3,7 +3,7 @@ import Modal from './Modal';
 import { FormField, Input, Select } from './FormControls';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { AdminStudent, initialAdminStudents } from './admin/pages/StudentsPage';
-import { Admission, initialAdmissions } from './admin/pages/SettingsPage';
+import { Admission, initialAdmissions, School, initialSchools } from './admin/pages/SettingsPage';
 import { AdmissionSettings } from './admin/pages/SecuritySettingsTab';
 import NotificationPreviewModal from './admin/shared/NotificationPreviewModal';
 import VideoPreviewModal from './admin/shared/VideoPreviewModal';
@@ -23,9 +23,11 @@ const isNotificationActive = (notif: any, admissionId: string, type: 'scrolling'
 
 interface ProtocolAdmissionPageProps {
   onReturnToVerification: () => void;
+  schoolSlug?: string;
+  admissionSlug?: string;
 }
 
-const ProtocolAdmissionPage: React.FC<ProtocolAdmissionPageProps> = ({ onReturnToVerification }) => {
+const ProtocolAdmissionPage: React.FC<ProtocolAdmissionPageProps> = ({ onReturnToVerification, schoolSlug, admissionSlug }) => {
     const [formData, setFormData] = useState({
         name: '',
         indexNumber: '',
@@ -47,11 +49,33 @@ const ProtocolAdmissionPage: React.FC<ProtocolAdmissionPageProps> = ({ onReturnT
 
     const [adminStudents, setAdminStudents] = useLocalStorage<AdminStudent[]>('admin_students', initialAdminStudents);
     const [admissions] = useLocalStorage<Admission[]>('admin_admissions', initialAdmissions);
-    
-    const ACTIVE_ADMISSION_ID = 'a1';
-    const ACTIVE_SCHOOL_ID = 's1';
+    const [schools] = useLocalStorage<School[]>('admin_schools', initialSchools);
 
-    const activeAdmission = useMemo(() => admissions.find(a => a.id === ACTIVE_ADMISSION_ID) || null, [admissions]);
+    // Determine active school/admission based on slugs, with fallback to defaults
+    const activeSchool = useMemo(() => {
+        if (schoolSlug) {
+            const bySlug = schools.find(s => s.slug === schoolSlug);
+            if (bySlug) return bySlug;
+        }
+        return schools.find(s => s.id === 's1') || null;
+    }, [schools, schoolSlug]);
+
+    const activeAdmission = useMemo(() => {
+        if (!activeSchool) return null;
+        if (admissionSlug) {
+            const bySlug = admissions.find(a => a.schoolId === activeSchool.id && a.slug === admissionSlug);
+            if (bySlug) return bySlug;
+        }
+        // Fallback to first active admission for that school, or any admission
+        return (
+            admissions.find(a => a.schoolId === activeSchool.id && a.status === 'Active') ||
+            admissions.find(a => a.schoolId === activeSchool.id) ||
+            null
+        );
+    }, [admissions, activeSchool, admissionSlug]);
+
+    const ACTIVE_SCHOOL_ID = activeSchool?.id || 's1';
+    const ACTIVE_ADMISSION_ID = activeAdmission?.id || 'a1';
 
     const getInitialNotification = (type: 'scrolling' | 'popup' | 'video') => {
         const key = `notification_${type}_${ACTIVE_SCHOOL_ID}_${ACTIVE_ADMISSION_ID}`;
@@ -147,7 +171,12 @@ const ProtocolAdmissionPage: React.FC<ProtocolAdmissionPageProps> = ({ onReturnT
         setIsConfirmModalOpen(false);
         setIsLoading(true);
         setTimeout(() => {
-            const existingStudent = adminStudents.find(student => student.indexNumber === formData.indexNumber);
+            const existingStudent = adminStudents.find(
+                student =>
+                    student.indexNumber === formData.indexNumber &&
+                    student.schoolId === ACTIVE_SCHOOL_ID &&
+                    student.admissionId === ACTIVE_ADMISSION_ID
+            );
             if (existingStudent) { setIsLoading(false); setIsDuplicateModalOpen(true); return; }
 
             // FIXED: Protocol status is assigned 'Pending' by default

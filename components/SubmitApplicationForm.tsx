@@ -234,67 +234,13 @@ const SubmitApplicationForm: React.FC<SubmitApplicationFormProps> = ({
     };
     
     if (isSubmitted && isAdminEditMode) {
-        return (
-             <div className="bg-logip-upgrade-bg dark:bg-logip-primary/10 rounded-lg p-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-logip-primary/10 dark:bg-logip-primary/20 flex items-center justify-center mb-4 mx-auto">
-                    <span className="material-symbols-outlined text-4xl text-logip-primary">edit_note</span>
-                </div>
-                <h2 className="text-xl font-bold text-black dark:text-gray-100">Admin Edit Mode</h2>
-                <p className="mt-2 text-base text-black dark:text-gray-300 max-w-md mx-auto">
-                    You are editing a submitted application. All fields are unlocked, and changes are saved automatically as you make them.
-                </p>
-                <div className="mt-6">
-                    <button
-                        onClick={onUnlockForEditing}
-                        className="px-6 py-2 text-base font-semibold rounded-lg text-yellow-800 dark:text-yellow-300 bg-yellow-400/50 hover:bg-yellow-400/70 transition-colors"
-                    >
-                        Reset Submission Status
-                    </button>
-                </div>
-            </div>
-        );
+        // In admin edit mode we no longer show a special submitted page.
+        // Admins will see the regular review form with fields unlocked.
     }
-    
+
     if (isSubmitted) {
-        return (
-            <div className="flex flex-col items-center justify-center text-center h-full min-h-[400px] py-10">
-                <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-5">
-                    <span className="material-symbols-outlined text-4xl text-green-500">
-                        task_alt
-                    </span>
-                </div>
-                <h2 className="text-2xl font-bold text-black dark:text-gray-100">
-                    Application Submitted!
-                </h2>
-                {submissionDate && (
-                    <div className="mt-4 text-base text-black dark:text-gray-400 bg-gray-100 dark:bg-gray-800/50 px-6 py-3 rounded-lg">
-                         <p className="font-semibold text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Date & Time</p>
-                         <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                            {formatDateTime(submissionDate)}
-                         </p>
-                    </div>
-                )}
-                {admissionNumber && (
-                    <div className="mt-6 text-center">
-                        <p className="text-base text-black dark:text-gray-400 mb-2">Your unique Admission Number is:</p>
-                        <p className="text-3xl font-bold text-logip-primary tracking-wider bg-logip-upgrade-bg dark:bg-logip-primary/10 px-6 py-3 rounded-xl inline-block shadow-sm border border-logip-primary/20">
-                            {admissionNumber}
-                        </p>
-                    </div>
-                )}
-                <p className="mt-8 text-base text-black dark:text-gray-400 max-w-md">
-                    Your application has been received successfully. You can now navigate to the 'Admission Documents' section to download your letter and other required documents.
-                </p>
-                <div className="mt-8">
-                    {applicationStatus === 'Rejected' && (
-                        <div className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-50/50 text-red-800 dark:text-red-200 p-4 rounded-lg text-center">
-                            <h3 className="font-bold">Application Declined</h3>
-                            <p className="mt-1 text-sm">Your application was not successful. This form can no longer be edited. Please contact the school administration for further details.</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
+        // For students, avoid rendering a full "Application Submitted" page here.
+        // The parent component (StudentDetails) will handle navigation to Admission Documents.
     }
 
     const showAccommodation = residence === 'Boarding';
@@ -429,11 +375,11 @@ const SubmitApplicationForm: React.FC<SubmitApplicationFormProps> = ({
                     </label>
                 </div>
 
-                <div className="flex justify-end items-center gap-4 mt-8 pt-6 border-t border-logip-border dark:border-report-border">
+                <div className="flex justify-center items-center gap-4 mt-8 pt-6 border-t border-logip-border dark:border-report-border">
                     <button
                         onClick={handleSubmit}
                         disabled={!isConfirmed}
-                        className="px-6 py-2 text-base font-semibold rounded-lg text-white bg-logip-primary hover:bg-logip-primary-hover transition-colors dark:shadow-sm dark:hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-logip-primary whitespace-nowrap"
+                        className="w-full max-w-md py-2 text-base font-semibold rounded-lg text-white bg-logip-primary hover:bg-logip-primary-hover transition-colors dark:shadow-sm dark:hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-logip-primary"
                     >
                         Submit Application
                     </button>

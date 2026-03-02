@@ -76,17 +76,17 @@ const ApplicantLoginForm: React.FC<ApplicantLoginFormProps> = ({ student, onLogi
 
   const isSubmitted = useMemo(() => {
     try {
-      const statusRaw = localStorage.getItem(`submissionStatus_s1_${student.indexNumber}`);
+      const statusRaw = localStorage.getItem(`submissionStatus_${student.schoolId}_${student.indexNumber}`);
       if (statusRaw) return JSON.parse(statusRaw).submitted === true;
     } catch (e) {}
     return false;
-  }, [student.indexNumber]);
+  }, [student.schoolId, student.indexNumber]);
 
   useEffect(() => {
     if (retrieveCredentials) {
       if (!isSubmitted) {
         try {
-          const storedCredentialsRaw = localStorage.getItem(`credentials_s1_${student.indexNumber}`);
+          const storedCredentialsRaw = localStorage.getItem(`credentials_${student.schoolId}_${student.indexNumber}`);
           if (storedCredentialsRaw) {
             const storedCredentials = JSON.parse(storedCredentialsRaw);
             setSerialNumber((storedCredentials.serialNumber || '').toUpperCase());
@@ -98,13 +98,13 @@ const ApplicantLoginForm: React.FC<ApplicantLoginFormProps> = ({ student, onLogi
         } catch (err) { setRetrieveCredentials(false); }
       } else {
         const todayStr = new Date().toISOString().split('T')[0];
-        const logKey = `credential_retrieval_log_s1_${student.indexNumber}`;
+        const logKey = `credential_retrieval_log_${student.schoolId}_${student.indexNumber}`;
         let retrievalLog = { date: '', count: 0 };
         try { const storedLog = localStorage.getItem(logKey); if (storedLog) retrievalLog = JSON.parse(storedLog); } catch (e) {}
         if (retrievalLog.date === todayStr && retrievalLog.count >= 1) { setIsLimitModalOpen(true); setRetrieveCredentials(false); return; }
         setSerialNumber(''); setPin('');
         try {
-          const smsNumberRaw = localStorage.getItem(`smsNotificationNumber_s1_${student.indexNumber}`);
+          const smsNumberRaw = localStorage.getItem(`smsNotificationNumber_${student.schoolId}_${student.indexNumber}`);
           const smsNumber = smsNumberRaw ? JSON.parse(smsNumberRaw) : null;
           if (smsNumber) setInfoMessage(`Credentials have been resent via SMS to ${smsNumber}.`);
           else setInfoMessage('Application is submitted. Credentials sent via SMS.');
@@ -119,14 +119,14 @@ const ApplicantLoginForm: React.FC<ApplicantLoginFormProps> = ({ student, onLogi
     e.preventDefault();
     setError(''); setInfoMessage(''); setIsLoading(true);
     try {
-        const storedCredentialsRaw = localStorage.getItem(`credentials_s1_${student.indexNumber}`);
+        const storedCredentialsRaw = localStorage.getItem(`credentials_${student.schoolId}_${student.indexNumber}`);
         if (!storedCredentialsRaw) { setError('Could not find credentials.'); setIsLoading(false); return; }
         const storedCredentials = JSON.parse(storedCredentialsRaw);
         
         // Case-insensitive comparison
         if (storedCredentials.serialNumber.toUpperCase() === serialNumber.toUpperCase() && 
             storedCredentials.pin.toUpperCase() === pin.toUpperCase()) {
-            localStorage.setItem(`student_login_timestamp_s1_${student.indexNumber}`, new Date().getTime().toString());
+            localStorage.setItem(`student_login_timestamp_${student.schoolId}_${student.indexNumber}`, new Date().getTime().toString());
             onLoginSuccess();
         } else setError('Invalid Serial Number or PIN.');
     } catch (err) { setError('Unexpected error occurred.'); } finally { setIsLoading(false); }

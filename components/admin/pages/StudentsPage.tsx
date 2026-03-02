@@ -12,6 +12,7 @@ import { initialHouses, getHouseColor, House } from '../shared/houseData';
 import { getHouseCounts } from '../shared/houseAllocationService';
 import { Programme } from './ProgrammesPage';
 import EditLogModal from '../shared/EditLogModal';
+import AdminModal from '../shared/AdminModal';
 import ImagePreviewModal from '../../shared/ImagePreviewModal';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { allocateDormForStudent, allocateHouseForStudent, updateHouseCountOnManualChange } from '../shared/houseAllocationService';
@@ -111,9 +112,10 @@ const FeeStatusPill: React.FC<{ status: 'Paid' | 'Unpaid' }> = ({ status }) => {
     return <span className={`${baseClasses} ${styles[status]}`}>{status}</span>;
 };
 
-const ActionButton: React.FC<{ icon: string, onClick: (e: React.MouseEvent) => void, title: string, colorClass?: string, disabled?: boolean }> = ({ icon, onClick, title, colorClass = 'text-logip-text-subtle hover:text-logip-text-header dark:text-dark-text-secondary dark:hover:text-dark-text-primary', disabled }) => (
+const ActionButton: React.FC<{ icon: string, onClick: (e: React.MouseEvent) => void, title: string, colorClass?: string, disabled?: boolean, onContextMenu?: (e: React.MouseEvent) => void }> = ({ icon, onClick, title, colorClass = 'text-logip-text-subtle hover:text-logip-text-header dark:text-dark-text-secondary dark:hover:text-dark-text-primary', disabled, onContextMenu }) => (
     <button 
         onClick={onClick} 
+        onContextMenu={onContextMenu}
         title={title} 
         disabled={disabled}
         className={`p-1.5 rounded-md transition-colors ${colorClass} no-print ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
@@ -121,6 +123,71 @@ const ActionButton: React.FC<{ icon: string, onClick: (e: React.MouseEvent) => v
         <span className="material-symbols-outlined text-xl">{icon}</span>
     </button>
 );
+
+const ResetDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; student: AdminStudent }> = ({ isOpen, onClose, student }) => {
+    const resetLogKey = `edit_app_limit_reset_log_${student.schoolId}_${student.indexNumber}`;
+    const retrievalLogKey = `credential_retrieval_log_${student.schoolId}_${student.indexNumber}`;
+    const [resetLog, setResetLog] = useState<{ totalResets?: number; lastResetAt?: string; lastResetBy?: string; lastResetByEmail?: string }>({});
+    const [retrievalLog, setRetrievalLog] = useState<{ date?: string; count?: number }>({});
+
+    useEffect(() => {
+        if (isOpen && student) {
+            try {
+                const storedReset = localStorage.getItem(resetLogKey);
+                setResetLog(storedReset ? JSON.parse(storedReset) : {});
+            } catch (e) {
+                setResetLog({});
+            }
+            try {
+                const storedRetrieval = localStorage.getItem(retrievalLogKey);
+                setRetrievalLog(storedRetrieval ? JSON.parse(storedRetrieval) : {});
+            } catch (e) {
+                setRetrievalLog({});
+            }
+        }
+    }, [isOpen, student, resetLogKey, retrievalLogKey]);
+
+    const totalResets = resetLog.totalResets ?? 0;
+    const lastBy = resetLog.lastResetBy || 'N/A';
+    const lastByEmail = resetLog.lastResetByEmail || '';
+    const lastAt = resetLog.lastResetAt ? new Date(resetLog.lastResetAt).toLocaleString() : 'N/A';
+    const retrievalCount = retrievalLog.count ?? 0;
+    const retrievalDate = retrievalLog.date || 'N/A';
+
+    return (
+        <AdminModal isOpen={isOpen} onClose={onClose} title={`Reset Details: ${student.name}`} size="2xl">
+            <div className="space-y-4">
+                <div className="p-4 rounded-lg border border-logip-border dark:border-dark-border bg-gray-50 dark:bg-dark-bg/50">
+                    <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-xl text-green-600 dark:text-green-400">history_toggle_off</span>
+                            <span className="font-bold text-logip-text-header dark:text-dark-text-primary">{lastBy}</span>
+                            {lastByEmail && <span className="text-sm text-logip-text-subtle dark:text-dark-text-secondary">({lastByEmail})</span>}
+                        </div>
+                        <div className="text-sm text-logip-text-subtle dark:text-dark-text-secondary">{lastAt}</div>
+                    </div>
+                    <ul className="space-y-1.5 pl-4 border-l-2 border-logip-border dark:border-dark-border">
+                        <li className="text-sm text-logip-text-body dark:text-dark-text-secondary">
+                            <span className="font-semibold text-logip-text-header dark:text-dark-text-primary">Times reset:</span> {totalResets}
+                        </li>
+                        <li className="text-sm text-logip-text-body dark:text-dark-text-secondary">
+                            <span className="font-semibold text-logip-text-header dark:text-dark-text-primary">Last reset by:</span> {lastBy}{lastByEmail ? ` (${lastByEmail})` : ''}
+                        </li>
+                        <li className="text-sm text-logip-text-body dark:text-dark-text-secondary">
+                            <span className="font-semibold text-logip-text-header dark:text-dark-text-primary">Last reset at:</span> {lastAt}
+                        </li>
+                        <li className="text-sm text-logip-text-body dark:text-dark-text-secondary">
+                            <span className="font-semibold text-logip-text-header dark:text-dark-text-primary">Retrieve credentials (today):</span> {retrievalCount} {retrievalDate !== 'N/A' ? `(date: ${retrievalDate})` : ''}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div className="pt-6 flex justify-end">
+                <button onClick={onClose} className="px-5 py-2 text-base font-semibold rounded-lg border border-logip-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Close</button>
+            </div>
+        </AdminModal>
+    );
+};
 
 const SimpleToggle: React.FC<{ checked: boolean; onChange: (checked: boolean) => void; label?: string }> = ({ checked, onChange, label }) => (
     <label className="relative inline-flex items-center cursor-pointer">
@@ -300,6 +367,7 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ selectedSchool, selectedAdm
     const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
     const [isPhotoAlbumOpen, setIsPhotoAlbumOpen] = useState(false);
     const [modalState, setModalState] = useState<{ mode: 'add' | 'edit' | 'delete' | 'bulk' | 'bulkDelete' | 'logs' | null; student: AdminStudent | null; logType?: 'student' | 'admin' }>({ mode: null, student: null });
+    const [resetDetailsStudent, setResetDetailsStudent] = useState<AdminStudent | null>(null);
     const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
     const handlePrint = () => {
@@ -677,6 +745,49 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ selectedSchool, selectedAdm
         setStudents(students.filter(p => p.id !== modalState.student!.id));
         logActivity({ name: adminUser.name, avatar: adminUser.avatar || '' }, 'deleted student record', 'student_delete', modalState.student.name, selectedSchool?.id);
         handleCloseModal();
+    };
+
+    const handleResetDailyLimit = (student: AdminStudent) => {
+        const logKey = `edit_app_limit_${student.schoolId}_${student.indexNumber}`;
+        const resetLogKey = `edit_app_limit_reset_log_${student.schoolId}_${student.indexNumber}`;
+        try {
+            localStorage.removeItem(logKey);
+
+            let resetLog: { totalResets: number; lastResetAt: string; lastResetBy: string; lastResetByEmail?: string } = {
+                totalResets: 0,
+                lastResetAt: '',
+                lastResetBy: '',
+                lastResetByEmail: ''
+            };
+
+            try {
+                const stored = localStorage.getItem(resetLogKey);
+                if (stored) resetLog = { ...resetLog, ...JSON.parse(stored) };
+            } catch (e) {}
+
+            resetLog.totalResets += 1;
+            resetLog.lastResetAt = new Date().toISOString();
+            resetLog.lastResetBy = adminUser.name;
+            resetLog.lastResetByEmail = adminUser.email;
+            localStorage.setItem(resetLogKey, JSON.stringify(resetLog));
+
+            showToast(`Daily edit limit reset for ${student.name}.`, 'info');
+            logActivity(
+                { name: adminUser.name, avatar: adminUser.avatar || '' },
+                'reset daily edit limit',
+                'security',
+                `Reset edit limit for ${student.name}`,
+                student.schoolId
+            );
+        } catch (e) {
+            showToast('Unable to reset daily limit. Please try again.', 'error');
+        }
+    };
+
+    const [resetConfirmStudent, setResetConfirmStudent] = useState<AdminStudent | null>(null);
+
+    const openResetDetailsModal = (student: AdminStudent) => {
+        setResetDetailsStudent(student);
     };
 
     const handleSelectStudent = useCallback((studentId: string) => {
@@ -1115,6 +1226,27 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ selectedSchool, selectedAdm
                                             title={!isSelectable ? "Action restricted: Pending fees" : (canEditThisStudent ? "Edit Student" : "Editing restricted to paid students")} 
                                             colorClass="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                                         />
+                                        {(() => {
+                                            const resetLogKey = `edit_app_limit_reset_log_${student.schoolId}_${student.indexNumber}`;
+                                            let hasReset = false;
+                                            try {
+                                                const stored = localStorage.getItem(resetLogKey);
+                                                if (stored) {
+                                                    const parsed = JSON.parse(stored);
+                                                    hasReset = !!parsed && (parsed.totalResets ?? 0) > 0;
+                                                }
+                                            } catch (e) {}
+                                            
+                                            return (
+                                                <ActionButton 
+                                                    icon="history_toggle_off" 
+                                                    onClick={(e) => { e.stopPropagation(); setResetConfirmStudent(student); }} 
+                                                    onContextMenu={hasReset ? (e) => { e.preventDefault(); e.stopPropagation(); openResetDetailsModal(student); } : undefined}
+                                                    title={hasReset ? "Reset Daily Limit (right-click for details)" : "Reset Daily Limit"}
+                                                    colorClass={hasReset ? 'text-green-500 hover:text-green-600 dark:text-green-300 dark:hover:text-green-200' : undefined}
+                                                />
+                                            );
+                                        })()}
                                         {canDelete && <ActionButton icon="delete" onClick={(e) => { e.stopPropagation(); handleOpenModal('delete', student); }} title="Delete" colorClass="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"/>}
                                         <button 
                                             onClick={() => isSelectable && toggleStudentExpansion(student.id)} 
@@ -1149,6 +1281,28 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ selectedSchool, selectedAdm
             {modalState.mode === 'bulkDelete' && <ConfirmationModal isOpen={true} onClose={handleCloseModal} onConfirm={handleBulkDelete} title={`Delete ${selectedStudentIds.length} Students`}>Are you sure you want to delete these {selectedStudentIds.length} students? This action is irreversible.</ConfirmationModal>}
             {modalState.mode === 'bulk' && <BulkUploadModal isOpen={true} onClose={handleCloseModal} formSettings={formSettings} allStudents={students} onUploadSuccess={handleBulkUploadSuccess} selectedAdmission={selectedAdmission} />}
             {modalState.mode === 'logs' && modalState.student && modalState.logType && <EditLogModal isOpen={true} onClose={handleCloseModal} student={modalState.student} logType={modalState.logType} />}
+            {resetConfirmStudent && (
+                <ConfirmationModal
+                    isOpen={true}
+                    onClose={() => setResetConfirmStudent(null)}
+                    onConfirm={() => {
+                        if (resetConfirmStudent) {
+                            handleResetDailyLimit(resetConfirmStudent);
+                        }
+                        setResetConfirmStudent(null);
+                    }}
+                    title="Reset Daily Limit"
+                >
+                    Are you sure you want to reset the daily edit limit for <strong>{resetConfirmStudent?.name}</strong> ({resetConfirmStudent?.indexNumber})?
+                </ConfirmationModal>
+            )}
+            {resetDetailsStudent && (
+                <ResetDetailsModal
+                    isOpen={!!resetDetailsStudent}
+                    onClose={() => setResetDetailsStudent(null)}
+                    student={resetDetailsStudent}
+                />
+            )}
             <ImagePreviewModal isOpen={imagePreview.isOpen} onClose={() => setImagePreview({ isOpen: false, url: '', alt: '' })} imageUrl={imagePreview.url} altText={imagePreview.alt} />
             <ColumnSelectionModal isOpen={isDownloadModalOpen} onClose={() => setIsDownloadModalOpen(false)} columns={allExportableFields} visibleColumns={downloadColumns} onVisibleColumnsChange={setDownloadColumns} onConfirm={handleBulkDownload} title="Select Columns to Download" confirmButtonText="Download CSV" />
             <StudentPhotoAlbumModal 

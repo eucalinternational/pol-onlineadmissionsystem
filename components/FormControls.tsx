@@ -50,7 +50,11 @@ export const Select: React.FC<SelectProps> = ({ children, value, onChange, place
     };
 
     return (
-        <div className={`relative ${className || 'w-full'}`} ref={containerRef}>
+        <div
+            className={`relative ${className || 'w-full'}`}
+            ref={containerRef}
+            id={props.id}
+        >
             <button
                 type="button"
                 disabled={disabled}

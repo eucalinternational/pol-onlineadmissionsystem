@@ -238,17 +238,43 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ selectedSchool, selectedAdm
     const portalUrl = useMemo(() => {
         if (!selectedSchool || !selectedAdmission) return '';
         
-        // FIX: Calculate URL more robustly for sandbox and deep-linked environments
-        // Uses the current full URL without query parameters as the base path.
+        // Custom domain support:
+        // If a customDomain is configured on the admission, use it as the base URL.
+        // Otherwise, fall back to current origin + /schoolSlug/admissionSlug.
+        const anyAdmission = admissions.find(a => a.id === selectedAdmission.id);
+        const customDomain = (anyAdmission as any)?.customDomain as string | undefined;
+        if (customDomain && customDomain.trim()) {
+            const trimmed = customDomain.trim().replace(/\/$/, '');
+            return `${trimmed}`;
+        }
+
         const url = new URL(window.location.href);
-        const basePath = url.origin + url.pathname.replace(/\/$/, '');
-        return `${basePath}/${selectedSchool.slug}/${selectedAdmission.slug}`;
-    }, [selectedSchool, selectedAdmission]);
+        const baseOrigin = url.origin;
+        return `${baseOrigin}/${selectedSchool.slug}/${selectedAdmission.slug}`;
+    }, [selectedSchool, selectedAdmission, admissions]);
 
     const handleCopyLink = () => {
         if (!portalUrl) return;
         navigator.clipboard.writeText(portalUrl);
         showToast('Portal link copied to clipboard!', 'success');
+    };
+
+    const handleEditPortalLink = () => {
+        if (!selectedAdmission) return;
+        const current = admissions.find(a => a.id === selectedAdmission.id) as any;
+        const existingCustomDomain = current?.customDomain || '';
+        const userInput = window.prompt(
+            'Enter the full custom domain URL where this admission portal will be hosted (e.g., https://admissions.yourschool.edu/2025-intake). Leave blank to use the default Packets Out portal link.',
+            existingCustomDomain
+        );
+        if (userInput === null) return;
+
+        const trimmed = userInput.trim();
+        const updatedAdmissions = admissions.map(a =>
+            a.id === selectedAdmission.id ? ({ ...(a as any), customDomain: trimmed } as Admission) : a
+        );
+        setAdmissions(updatedAdmissions);
+        showToast('Public portal link updated.', 'success');
     };
 
     const handleOpenModal = (mode: typeof modalState.mode, item: typeof modalState.item) => {
@@ -511,14 +537,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ selectedSchool, selectedAdm
                                                     className="flex-1 px-3 py-2.5 bg-transparent text-sm text-logip-text-body dark:text-dark-text-secondary font-mono focus:outline-none overflow-x-auto no-scrollbar"
                                                     title={portalUrl}
                                                 />
+                                                <div className="flex items-center gap-1 ml-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleEditPortalLink}
+                                                        className="p-1.5 rounded-md text-logip-text-subtle hover:text-logip-text-header hover:bg-gray-100 dark:hover:bg-dark-border transition-colors"
+                                                        title="Edit public portal link / custom domain"
+                                                    >
+                                                        <span className="material-symbols-outlined text-base">edit</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleCopyLink}
+                                                        className="p-1.5 rounded-md text-logip-text-subtle hover:text-logip-text-header hover:bg-gray-100 dark:hover:bg-dark-border transition-colors"
+                                                        title="Copy portal link"
+                                                    >
+                                                        <span className="material-symbols-outlined text-base">content_copy</span>
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <button 
-                                                onClick={handleCopyLink}
-                                                className="flex items-center justify-center gap-2 px-6 h-[42px] bg-logip-primary text-white font-bold rounded-lg hover:bg-logip-primary-hover transition-all shadow-md active:scale-95 whitespace-nowrap"
-                                            >
-                                                <span className="material-symbols-outlined text-xl">content_copy</span>
-                                                Copy Link
-                                            </button>
                                         </div>
                                         <p className="mt-2 text-xs text-logip-text-subtle italic">Provide this link to applicants to access the admission portal for {selectedSchool.name}.</p>
                                     </div>

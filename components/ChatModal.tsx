@@ -12,7 +12,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose, title, children 
 
   return (
     <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 animate-fadeIn"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex justify-center items-center p-4 animate-fadeIn"
         onClick={onClose}
         role="dialog"
         aria-modal="true"

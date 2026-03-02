@@ -99,6 +99,7 @@ const Chat: React.FC<ChatProps> = ({
 }) => {
     const [showScrollToBottom, setShowScrollToBottom] = useState(false);
     const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+    const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
     
     const isDesktop = useIsDesktop();
     const [isProfileExpanded, setIsProfileExpanded] = useState(false);
@@ -146,6 +147,17 @@ const Chat: React.FC<ChatProps> = ({
     const schoolName = useMemo(() => {
         return schools.find(s => s.id === student.schoolId)?.name || 'School';
     }, [schools, student.schoolId]);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     // Handle Admin Replies from Admin Panel
     useEffect(() => {
@@ -382,7 +394,18 @@ const Chat: React.FC<ChatProps> = ({
             )}
             <div className="flex-1 flex flex-col bg-logip-white dark:bg-report-dark/50 border border-logip-border dark:border-report-border rounded-2xl pt-4 px-4 pb-2 min-h-0 overflow-hidden">
                 <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                   <h3 className="text-lg font-semibold text-black dark:text-gray-100">Support Connect</h3>
+                   <div className="flex items-center gap-2">
+                     <h3 className="text-lg font-semibold text-black dark:text-gray-100">Support Connect</h3>
+                     {isOnline ? (
+                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300 animate-pulse">
+                         Live chat
+                       </span>
+                     ) : (
+                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">
+                         No internet
+                       </span>
+                     )}
+                   </div>
                    <div className="flex items-center gap-1">
                        {onExpand && variant === 'sidebar' && <button onClick={onExpand} className="p-1 rounded-full text-logip-text-subtle hover:text-white transition-colors" title="Expand Chat"><span className="material-symbols-outlined text-xl">open_in_full</span></button>}
                    </div>

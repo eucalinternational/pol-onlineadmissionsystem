@@ -293,7 +293,13 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
   const saveTimerRef = useRef<number | null>(null);
 
   const [schools] = useLocalStorage<School[]>('admin_schools', initialSchools);
-  const school = useMemo(() => schools.find(s => s.id === initialStudent.schoolId), [schools, initialStudent.schoolId]);
+  const school = useMemo(() => {
+      const s = schools.find(s => s.id === initialStudent.schoolId);
+      if (s) {
+          document.title = `${s.name} - Online Admission Portal`;
+      }
+      return s;
+  }, [schools, initialStudent.schoolId]);
   const [admissions] = useLocalStorage<Admission[]>('admin_admissions', initialAdmissions);
   const admission = useMemo(() => admissions.find(a => a.id === initialStudent.admissionId), [admissions, initialStudent.admissionId]);
   
@@ -333,25 +339,34 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
   }, [formSettings, applicationData]);
 
   const isOpenFirstTime = useRef(true);
-
+ 
   const handleNavClick = (pageId: Page, fieldId?: string) => {
+      // When the form is locked and the user is on the Admission Documents page,
+      // prevent navigation to other sections until Edit Application unlocks it.
+      if (isFormLocked && currentPage === 'admission_docs' && pageId !== 'admission_docs') {
+          return;
+      }
+
       document.querySelectorAll('.field-highlight-error').forEach(el => el.classList.remove('field-highlight-error'));
-      setCurrentPage(pageId); 
-      setTimeout(() => {
-          if (fieldId) {
-                const element = document.getElementById(fieldId);
-                if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    element.focus({ preventScroll: true });
-                    element.classList.add('field-highlight-error');
-                    element.style.outline = '2px solid #2563EB';
-                    element.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.2)';
-                    setTimeout(() => { element.style.outline = ''; element.style.boxShadow = ''; }, 3000);
-                }
-                return;
+      
+      // Always update current page for consistent navigation and validation jumps
+      setCurrentPage(pageId);
+      
+      // Scroll immediately for a snappier navigation experience
+      if (fieldId) {
+          const element = document.getElementById(fieldId);
+          if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              element.focus({ preventScroll: true });
+              element.classList.add('field-highlight-error');
+              element.style.outline = '2px solid #2563EB';
+              element.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.2)';
+              setTimeout(() => { element.style.outline = ''; element.style.boxShadow = ''; }, 3000);
           }
+      } else {
           sectionRefs.current[pageId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 300);
+      }
+      
       if (window.innerWidth < 1024) setIsSidebarOpen(false); 
   };
 
@@ -672,7 +687,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
   }, [realTimeApplicationStatus, classHouseDormAccessSettings, assignedHouse, houseAssignmentMethod, enableRoomManagement, dormDisplay.visible, liveStudent.residence]);
 
   const allNavItems = [
-    { id: 'personal_info', icon: 'person', label: 'P. Info', color: 'text-orange-500' },
+    { id: 'personal_info', icon: 'person', label: 'Personal Information', color: 'text-orange-500' },
     { id: 'academic_info', icon: 'school', label: 'Academic Information', color: 'text-blue-500' },
     { id: 'housing', icon: 'house', label: 'House Allocation', color: 'text-indigo-500' },
     { id: 'dorm_allocation', icon: 'king_bed', label: 'Dorm/Room Allocation', color: 'text-sky-500' },
@@ -696,7 +711,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
   };
 
   const navItems = allNavItems.filter(item => {
-    if (isApplicationSubmitted && !isAdminEditMode) return item.id === 'admission_docs' || item.id === 'personal_info';
+    // Do not collapse menu after submission; keep all relevant sections visible.
     if (item.id === 'documents' && applicationData.hasDisability !== 'Yes') return false;
     if (item.id === 'other_info' && isApplicationSubmitted && !hasOtherInfoData) return false;
     if (item.id === 'housing' && !houseDisplay.visible) return false;
@@ -858,19 +873,11 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
     } catch (e) { return { school: '0244889791', it: '0243339546' }; }
   }, [initialStudent.admissionId]);
 
-  useEffect(() => { if (isApplicationSubmitted && currentPage !== 'admission_docs') { setTimeout(() => { sectionRefs.current.submit?.scrollIntoView({ behavior: 'auto', block: 'start' }); }, 100); } }, [isApplicationSubmitted]);
-  useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-            const intersectingEntries = entries.filter((e) => e.isIntersecting);
-            if (intersectingEntries.length > 0) {
-                intersectingEntries.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-                const newPage = intersectingEntries[0].target.id as Page;
-                setCurrentPage(newPage);
-            }
-        }, { root: scrollContainerRef.current, rootMargin: '0px 0px -60% 0px' });
-    Object.values(sectionRefs.current).forEach((ref) => { if (ref instanceof Element) observer.observe(ref); });
-    return () => { Object.values(sectionRefs.current).forEach((ref) => { if (ref instanceof Element) observer.unobserve(ref); }); };
-  }, [navItems, isApplicationSubmitted]);
+  useEffect(() => { 
+    if (isApplicationSubmitted && currentPage !== 'admission_docs') { 
+      setTimeout(() => { sectionRefs.current.submit?.scrollIntoView({ behavior: 'auto', block: 'start' }); }, 100); 
+    } 
+  }, [isApplicationSubmitted, currentPage]);
 
   const dormDisplayValue = useMemo(() => (isApplicationSubmitted || realTimeApplicationStatus === 'Admitted') ? (assignedDorm || 'N/A') : (assignedDorm || 'N/A'), [isApplicationSubmitted, realTimeApplicationStatus, assignedDorm]);
   const ProtocolIndicator: React.FC = () => ( <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center text-xs font-black text-red-700 bg-pink-100 rounded-lg shadow-sm border border-pink-200">P</span> );
@@ -943,21 +950,18 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
 
   const MobileBottomNav = () => {
     const navDestinations = [
-      { id: 'home', label: 'Home', icon: 'home', color: 'text-logip-primary' },
-      { id: 'personal_info', label: 'P. Info', icon: 'person', color: 'text-orange-500' },
-      { id: 'academic_info', label: 'Aca Info', icon: 'school', color: 'text-blue-500' },
-      { id: 'housing', label: 'House', icon: 'house', color: 'text-indigo-500' },
-      { id: 'submit', label: 'Submit', icon: 'task_alt', color: 'text-emerald-500' },
+      { id: 'personal_info', label: 'P. INFO', icon: 'person', color: 'text-orange-500' },
+      { id: 'academic_info', label: 'ACA', icon: 'school', color: 'text-blue-500' },
+      { id: 'housing', label: 'HOUSE', icon: 'house', color: 'text-indigo-500' },
+      { id: 'dorm_allocation', label: 'DORM', icon: 'king_bed', color: 'text-sky-500' },
+      { id: 'parents_info', label: 'PARENT', icon: 'supervisor_account', color: 'text-rose-500' },
+      { id: 'submit', label: 'REVIEW', icon: 'task_alt', color: 'text-emerald-500' },
     ];
     
-    const filteredMobileItems = navDestinations.filter(item => { 
+    const itemsToDisplay = navDestinations.filter(item => { 
         if (item.id === 'housing' && !houseDisplay.visible) return false; 
+        if (item.id === 'dorm_allocation' && (!enableRoomManagement || !dormDisplay.visible)) return false;
         return true; 
-    });
-    
-    const itemsToDisplay = filteredMobileItems.map((item, idx) => { 
-        if (idx === 4 && isApplicationSubmitted && !isAdminEditMode) return { id: 'admission_docs', label: 'Documents', icon: 'description', color: 'text-purple-500' }; 
-        return item; 
     });
     
     const showEditButton = isApplicationSubmitted && realTimeApplicationStatus !== 'Rejected' && (admissionSettings?.allowStudentEdit !== false) && isScrollingUp && currentPage !== 'admission_docs';
@@ -983,7 +987,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
                 {/* Main Navigation Bar - Higher Z-Index and optimized padding */}
                 <div className="w-full bg-white dark:bg-report-dark border-t border-gray-200 dark:border-white/5 shadow-2xl px-2 py-2 flex justify-between items-center relative pointer-events-auto overflow-hidden">
                     {itemsToDisplay.map((item, idx) => {
-                        const isTrulyActive = currentPage === item.id || (item.id === 'home' && currentPage === 'personal_info' && lastScrollTopRef.current < 200);
+                        const isTrulyActive = currentPage === item.id;
                         return (
                             <button 
                                 key={`${item.id}-${idx}`} 
@@ -995,11 +999,12 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
                                         handleNavClick(item.id as Page);
                                     }
                                 }} 
-                                className="flex-1 flex flex-col items-center justify-center relative py-1.5 transition-all duration-300 cursor-pointer active:scale-95 touch-manipulation focus:outline-none select-none z-[10]"
+                                className={`flex-1 flex flex-col items-center justify-center py-1.5 rounded-xl transition-colors duration-200 cursor-pointer active:scale-95 touch-manipulation focus:outline-none select-none ${
+                                    isTrulyActive ? 'bg-gray-100 dark:bg-gray-800/80' : 'bg-transparent'
+                                }`}
                             >
-                                {isTrulyActive && <div className="absolute inset-x-1 inset-y-0.5 bg-gray-100 dark:bg-gray-800 rounded-xl animate-scaleIn"></div>}
-                                <span className={`material-symbols-outlined text-2xl transition-colors duration-300 ${item.color} ${isTrulyActive ? 'opacity-100' : 'opacity-70'}`}>{item.icon}</span>
-                                <span className={`text-[9px] mt-1 transition-colors duration-300 uppercase tracking-tighter font-normal ${isTrulyActive ? item.color : 'text-gray-400 dark:text-gray-500'}`}>{item.label}</span>
+                                <span className={`material-symbols-outlined text-2xl transition-colors duration-200 ${item.color} ${isTrulyActive ? 'opacity-100' : 'opacity-70'}`}>{item.icon}</span>
+                                <span className={`text-[9px] mt-1 transition-colors duration-200 uppercase tracking-tighter font-normal ${isTrulyActive ? item.color : 'text-gray-400 dark:text-gray-500'}`}>{item.label}</span>
                             </button>
                         );
                     })}
@@ -1045,7 +1050,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
                             <button onClick={toggleTheme} className="hidden lg:flex w-10 h-10 flex-shrink-0 items-center justify-center rounded-full border border-logip-border dark:border-report-border text-logip-text-body dark:text-gray-400 hover:bg-logip-border/60 dark:hover:bg-gray-800 transition-colors" aria-label="Toggle theme"><span className="material-symbols-outlined text-xl">{isDarkMode ? 'light_mode' : 'dark_mode'}</span></button>
                         </div>
                     </header>
-                    <div className="flex-1 flex overflow-hidden min-h-0 px-4 pt-4 pb-0 sm:p-6 gap-6 pb-20 lg:pb-6">
+                    <div className="flex-1 flex overflow-hidden min-h-0 px-4 pt-4 pb-0 sm:p-6 gap-6 pb-24 lg:pb-6">
                         <div className="hidden md:flex w-full max-w-sm flex-shrink-0 bg-logip-white dark:bg-report-dark border border-logip-border dark:border-report-border rounded-xl flex flex-col p-6">
                             <div className="text-center">
                                 <button className="block mx-auto mb-4 p-0 bg-transparent border-0"><img src={avatarUrl} alt={liveStudent.name} className="w-24 h-24 rounded-lg object-cover shadow-md" /></button>
@@ -1054,7 +1059,27 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
                             </div>
                             <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3">{displayedAdmissionNumber && <><dt className="text-sm text-black dark:text-gray-400">Admission No.</dt><dd className="text-sm text-right font-semibold text-logip-primary dark:text-logip-accent">{displayedAdmissionNumber}</dd></>}{displayedSubmissionDate && <><dt className="text-sm text-black dark:text-gray-400">Date Submitted</dt><dd className="text-sm text-right font-semibold text-black dark:text-gray-200">{formatDateTime(displayedSubmissionDate)}</dd></>}<dt className="text-sm text-black dark:text-gray-400">Index Number</dt><dd className="text-sm text-right font-semibold text-black dark:text-gray-200">{liveStudent.indexNumber}</dd><dt className="text-sm text-black dark:text-gray-400">Gender</dt><dd className="text-sm text-right font-semibold text-black dark:text-gray-200">{liveStudent.gender}</dd><dt className="text-sm text-black dark:text-gray-400">Aggregate</dt><dd className="text-sm text-right font-semibold text-black dark:text-gray-200">{liveStudent.aggregate}</dd><dt className="text-sm text-black dark:text-gray-400">Residence</dt><dd className="text-sm text-right font-semibold text-black dark:text-gray-200">{liveStudent.residence}</dd><dt className="text-sm text-black dark:text-gray-400">Programme</dt><dd className="text-sm text-right font-semibold text-black dark:text-gray-200 truncate">{liveStudent.programme}</dd>{classDisplay.visible && <><dt className="text-sm text-black dark:text-gray-400">Class</dt><dd className={`text-sm text-right font-semibold ${classDisplay.isRestricted ? 'text-red-500 italic text-xs' : 'text-black dark:text-gray-200'}`}>{classDisplay.isRestricted ? classDisplay.value : <span className="px-2 py-1 text-xs font-semibold rounded-md bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">{classDisplay.value}</span>}</dd></>}{houseDisplay.visible && ['Admitted', 'submitted', 'Prospective', 'Pending'].includes(realTimeApplicationStatus) && <><dt className="text-sm text-black dark:text-gray-400">House</dt><dd className={`text-sm text-right font-semibold ${houseDisplay.isRestricted ? 'text-red-500 italic text-xs' : 'text-black dark:text-gray-200'}`}>{houseDisplay.isRestricted ? houseDisplay.value : (houseDisplay.value === 'N/A' ? 'N/A' : <span className={`px-2 py-1 text-xs font-semibold rounded-md ${houseColors.pillBg} ${houseColors.pillText}`}>{houseDisplay.value}</span>)}</dd></>}{dormDisplay.visible && ['Admitted', 'submitted', 'Prospective', 'Pending'].includes(realTimeApplicationStatus) && <><dt className="text-sm text-black dark:text-gray-400">Dorm/Room</dt><dd className={`text-sm text-right font-semibold ${dormDisplay.isRestricted ? 'text-red-500 italic text-xs' : 'text-black dark:text-gray-200'}`}>{dormDisplay.isRestricted ? dormDisplay.value : <span className="px-2 py-1 text-xs font-semibold rounded-md bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300">{dormDisplay.value}</span>}</dd></>}</dl>
                         </div>
-                        <div onScroll={handleScroll} className="flex-1 overflow-y-auto no-scrollbar bg-logip-white dark:bg-report-dark border border-logip-border dark:border-report-border rounded-xl p-6 lg:p-8"><AdmissionDocumentsPage student={liveStudent} applicationStatus={realTimeApplicationStatus} admission={admission} formSettings={formSettings} applicationData={applicationData} showToast={showToast} /></div>
+                        <div onScroll={handleScroll} className="flex-1 overflow-y-auto no-scrollbar bg-logip-white dark:bg-report-dark border border-logip-border dark:border-report-border rounded-xl p-6 lg:p-8">
+                            <AdmissionDocumentsPage
+                                student={liveStudent}
+                                applicationStatus={realTimeApplicationStatus}
+                                admission={admission}
+                                formSettings={formSettings}
+                                applicationData={applicationData}
+                                showToast={showToast}
+                            />
+                            {/* Mobile / Tablet action: Edit Application only (spaced above floating button) */}
+                            <div className="mt-8 mb-20 flex flex-col sm:flex-row gap-3 lg:hidden">
+                                {isApplicationSubmitted && realTimeApplicationStatus !== 'Rejected' && (admissionSettings?.allowStudentEdit !== false) && (
+                                    <button
+                                        onClick={handleRequestUnlock}
+                                        className="flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg border border-blue-600 text-blue-700 bg-white hover:bg-blue-50 transition-colors"
+                                    >
+                                        Edit Application
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                     <footer className="hidden lg:flex flex-shrink-0 items-center justify-between px-4 py-3 sm:px-6 border-t border-logip-border dark:border-report-border bg-logip-white dark:bg-report-dark">
                         {logoutAndBranding()}
@@ -1104,7 +1129,218 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
                 <img src={avatarUrl} alt={liveStudent.name} className="w-16 h-16 rounded-lg object-cover" />
             </div>
         </header>
-        <div className="flex-1 bg-logip-white dark:bg-report-dark border border-logip-border dark:border-report-border rounded-xl flex flex-col overflow-hidden min-h-0"><div className="sticky top-0 bg-logip-white dark:bg-report-dark z-10"><div className="p-6 lg:p-8 flex-shrink-0"><ApplicationProgressBar currentPage={currentPage} hasDisability={applicationData.hasDisability === 'Yes'} isApplicationSubmitted={isApplicationSubmitted} hasOtherInfoData={hasOtherInfoData} enableRoomManagement={enableRoomManagement} /></div><hr className="border-logip-border dark:border-report-border flex-shrink-0" /></div><div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto no-scrollbar"><section id="personal_info" ref={(el) => { sectionRefs.current['personal_info'] = el; }} className="p-6 lg:p-8"><PersonalInfoForm student={liveStudent} showToast={showToast} isSubmitted={isFormLocked} formSettings={formSettings} applicationData={applicationData} setApplicationData={handleApplicationDataChange} isAdminEditMode={isAdminEditMode} aiSettings={aiSettings} /></section><hr className="border-logip-border dark:border-report-border mx-8" /><section id="academic_info" ref={(el) => { sectionRefs.current['academic_info'] = el; }} className="p-6 lg:p-8"><AcademicInfoForm student={liveStudent} showToast={showToast} isSubmitted={isFormLocked} formSettings={formSettings} applicationData={applicationData} setApplicationData={handleApplicationDataChange} isAdminEditMode={isAdminEditMode} allStudents={allStudents || adminStudents} aiSettings={aiSettings} classes={classes} /></section>{houseDisplay.visible && (<><hr className="border-logip-border dark:border-report-border mx-8" /><section id="housing" ref={(el) => { sectionRefs.current['housing'] = el; }} className="p-6 lg:p-8"><HouseAllocationForm student={liveStudent} showToast={showToast} isSubmitted={isFormLocked} houseAssignmentMethod={houseAssignmentMethod} studentHouseChoice={studentHouseChoice} setStudentHouseChoice={(val) => { handleApplicationDataChange(prev => ({...prev, studentHouseChoice: val})); }} allStudents={allStudents || adminStudents} assignedHouse={assignedHouse} /></section></>)}{dormDisplay.visible && (<><hr className="border-logip-border dark:border-report-border mx-8" /><section id="dorm_allocation" ref={(el) => { sectionRefs.current['dorm_allocation'] = el; }} className="p-6 lg:p-8"><DormAllocationForm isSubmitted={isFormLocked} dormAssignmentMethod={dormAssignmentMethod} enableRoomManagement={enableRoomManagement} studentHouseChoice={studentHouseChoice} studentDormChoice={studentDormChoice} setStudentDormChoice={(val) => { handleApplicationDataChange(prev => ({...prev, studentDormChoice: val})); }} allStudents={allStudents || adminStudents} assignedDorm={assignedDorm} assignedHouse={assignedHouse} /></section></>)}{(!isApplicationSubmitted || hasOtherInfoData) && (<><hr className="border-logip-border dark:border-report-border mx-8" /><section id="other_info" ref={(el) => { sectionRefs.current['other_info'] = el; }} className="p-6 lg:p-8"><OtherRelevantInfoForm student={liveStudent} showToast={showToast} isSubmitted={isFormLocked} formSettings={formSettings} applicationData={applicationData} setApplicationData={handleApplicationDataChange} isAdminEditMode={isAdminEditMode} aiSettings={aiSettings} /></section></>)}<hr className="border-logip-border dark:border-report-border mx-8" /><section id="parents_info" ref={(el) => { sectionRefs.current['parents_info'] = el; }} className="p-6 lg:p-8"><ParentsInfoForm student={liveStudent} showToast={showToast} isSubmitted={isFormLocked} formSettings={formSettings} applicationData={applicationData} setApplicationData={handleApplicationDataChange} isAdminEditMode={isAdminEditMode} aiSettings={aiSettings} /></section>{hasVisibleDocumentFields && (<><hr className="border-logip-border dark:border-report-border mx-8" /><section id="documents" ref={(el) => { sectionRefs.current['documents'] = el; }} className="p-6 lg:p-8"><DocumentsSection student={liveStudent} isSubmitted={isFormLocked} onCloseMedicalSection={handleCloseMedicalSection} isAdminEditMode={isAdminEditMode} formSettings={formSettings} applicationData={applicationData} setApplicationData={handleApplicationDataChange} aiSettings={aiSettings} /></section></>)}<hr className="border-logip-border dark:border-report-border mx-8" /><section id="submit" ref={(el) => { sectionRefs.current['submit'] = el; }} className="p-6 lg:p-8"><SubmitApplicationForm student={liveStudent} onSubmissionSuccess={handleApplicationSubmit} isSubmitted={isApplicationSubmitted} submissionDate={submissionDate} admissionNumber={admissionNumber} onEdit={handleEdit} onUnlockForEditing={handleRequestUnlock} formSettings={formSettings} applicationData={applicationData} isAdminEditMode={isAdminEditMode} applicationStatus={realTimeApplicationStatus} showToast={showToast} handleNavClick={handleNavClick} assignedHouse={assignedHouse} assignedDorm={assignedDorm} enableRoomManagement={enableRoomManagement} houseAssignmentMethod={houseAssignmentMethod} dormAssignmentMethod={dormAssignmentMethod} studentHouseChoice={studentHouseChoice} studentDormChoice={studentDormChoice} residence={liveStudent.residence} classDisplay={classDisplay} houseDisplay={houseDisplay} dormDisplay={dormDisplay} isConfirmModalOpen={isConfirmModalOpen} setIsConfirmModalOpen={setIsConfirmModalOpen} /></section></div></div>
+        <div className="flex-1 bg-logip-white dark:bg-report-dark border border-logip-border dark:border-report-border rounded-xl flex flex-col overflow-hidden min-h-0">
+          <div className="sticky top-0 bg-logip-white dark:bg-report-dark z-10">
+            <div className="p-6 lg:p-8 flex-shrink-0">
+              <ApplicationProgressBar
+                currentPage={currentPage}
+                hasDisability={applicationData.hasDisability === 'Yes'}
+                isApplicationSubmitted={isApplicationSubmitted}
+                hasOtherInfoData={hasOtherInfoData}
+                enableRoomManagement={enableRoomManagement}
+              />
+            </div>
+            <hr className="border-logip-border dark:border-report-border flex-shrink-0" />
+          </div>
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto no-scrollbar pb-32"
+          >
+            <section
+              id="personal_info"
+              ref={(el) => {
+                sectionRefs.current['personal_info'] = el;
+              }}
+              className="p-6 lg:p-8"
+            >
+              <PersonalInfoForm
+                student={liveStudent}
+                showToast={showToast}
+                isSubmitted={isFormLocked}
+                formSettings={formSettings}
+                applicationData={applicationData}
+                setApplicationData={handleApplicationDataChange}
+                isAdminEditMode={isAdminEditMode}
+                aiSettings={aiSettings}
+              />
+            </section>
+            <hr className="border-logip-border dark:border-report-border mx-8" />
+            <section
+              id="academic_info"
+              ref={(el) => {
+                sectionRefs.current['academic_info'] = el;
+              }}
+              className="p-6 lg:p-8"
+            >
+              <AcademicInfoForm
+                student={liveStudent}
+                showToast={showToast}
+                isSubmitted={isFormLocked}
+                formSettings={formSettings}
+                applicationData={applicationData}
+                setApplicationData={handleApplicationDataChange}
+                isAdminEditMode={isAdminEditMode}
+                allStudents={allStudents || adminStudents}
+                aiSettings={aiSettings}
+                classes={classes}
+              />
+            </section>
+            {houseDisplay.visible && (
+              <>
+                <hr className="border-logip-border dark:border-report-border mx-8" />
+                <section
+                  id="housing"
+                  ref={(el) => {
+                    sectionRefs.current['housing'] = el;
+                  }}
+                  className="p-6 lg:p-8"
+                >
+                  <HouseAllocationForm
+                    student={liveStudent}
+                    showToast={showToast}
+                    isSubmitted={isFormLocked}
+                    houseAssignmentMethod={houseAssignmentMethod}
+                    studentHouseChoice={studentHouseChoice}
+                    setStudentHouseChoice={(val) => {
+                      handleApplicationDataChange((prev) => ({ ...prev, studentHouseChoice: val }));
+                    }}
+                    allStudents={allStudents || adminStudents}
+                    assignedHouse={assignedHouse}
+                  />
+                </section>
+              </>
+            )}
+            {dormDisplay.visible && (
+              <>
+                <hr className="border-logip-border dark:border-report-border mx-8" />
+                <section
+                  id="dorm_allocation"
+                  ref={(el) => {
+                    sectionRefs.current['dorm_allocation'] = el;
+                  }}
+                  className="p-6 lg:p-8"
+                >
+                  <DormAllocationForm
+                    isSubmitted={isFormLocked}
+                    dormAssignmentMethod={dormAssignmentMethod}
+                    enableRoomManagement={enableRoomManagement}
+                    studentHouseChoice={studentHouseChoice}
+                    studentDormChoice={studentDormChoice}
+                    setStudentDormChoice={(val) => {
+                      handleApplicationDataChange((prev) => ({ ...prev, studentDormChoice: val }));
+                    }}
+                    allStudents={allStudents || adminStudents}
+                    assignedDorm={assignedDorm}
+                    assignedHouse={assignedHouse}
+                  />
+                </section>
+              </>
+            )}
+            {(!isApplicationSubmitted || hasOtherInfoData) && (
+              <>
+                <hr className="border-logip-border dark:border-report-border mx-8" />
+                <section
+                  id="other_info"
+                  ref={(el) => {
+                    sectionRefs.current['other_info'] = el;
+                  }}
+                  className="p-6 lg:p-8"
+                >
+                  <OtherRelevantInfoForm
+                    student={liveStudent}
+                    showToast={showToast}
+                    isSubmitted={isFormLocked}
+                    formSettings={formSettings}
+                    applicationData={applicationData}
+                    setApplicationData={handleApplicationDataChange}
+                    isAdminEditMode={isAdminEditMode}
+                    aiSettings={aiSettings}
+                  />
+                </section>
+              </>
+            )}
+            <hr className="border-logip-border dark:border-report-border mx-8" />
+            <section
+              id="parents_info"
+              ref={(el) => {
+                sectionRefs.current['parents_info'] = el;
+              }}
+              className="p-6 lg:p-8"
+            >
+              <ParentsInfoForm
+                student={liveStudent}
+                showToast={showToast}
+                isSubmitted={isFormLocked}
+                formSettings={formSettings}
+                applicationData={applicationData}
+                setApplicationData={handleApplicationDataChange}
+                isAdminEditMode={isAdminEditMode}
+                aiSettings={aiSettings}
+              />
+            </section>
+            {hasVisibleDocumentFields && (
+              <>
+                <hr className="border-logip-border dark:border-report-border mx-8" />
+                <section
+                  id="documents"
+                  ref={(el) => {
+                    sectionRefs.current['documents'] = el;
+                  }}
+                  className="p-6 lg:p-8"
+                >
+                  <DocumentsSection
+                    student={liveStudent}
+                    isSubmitted={isFormLocked}
+                    onCloseMedicalSection={handleCloseMedicalSection}
+                    isAdminEditMode={isAdminEditMode}
+                    formSettings={formSettings}
+                    applicationData={applicationData}
+                    setApplicationData={handleApplicationDataChange}
+                    aiSettings={aiSettings}
+                  />
+                </section>
+              </>
+            )}
+            <hr className="border-logip-border dark:border-report-border mx-8" />
+            <section
+              id="submit"
+              ref={(el) => {
+                sectionRefs.current['submit'] = el;
+              }}
+              className="p-6 lg:p-8"
+            >
+              <SubmitApplicationForm
+                student={liveStudent}
+                onSubmissionSuccess={handleApplicationSubmit}
+                isSubmitted={isApplicationSubmitted}
+                submissionDate={submissionDate}
+                admissionNumber={admissionNumber}
+                onEdit={handleEdit}
+                onUnlockForEditing={handleRequestUnlock}
+                formSettings={formSettings}
+                applicationData={applicationData}
+                isAdminEditMode={isAdminEditMode}
+                applicationStatus={realTimeApplicationStatus}
+                showToast={showToast}
+                handleNavClick={handleNavClick}
+                assignedHouse={assignedHouse}
+                assignedDorm={assignedDorm}
+                enableRoomManagement={enableRoomManagement}
+                houseAssignmentMethod={houseAssignmentMethod}
+                dormAssignmentMethod={dormAssignmentMethod}
+                studentHouseChoice={studentHouseChoice}
+                studentDormChoice={studentDormChoice}
+                residence={liveStudent.residence}
+                classDisplay={classDisplay}
+                houseDisplay={houseDisplay}
+                dormDisplay={dormDisplay}
+                isConfirmModalOpen={isConfirmModalOpen}
+                setIsConfirmModalOpen={setIsConfirmModalOpen}
+              />
+            </section>
+          </div>
+        </div>
       </main>
       <MobileBottomNav />
       <aside className={`w-[340px] h-full bg-logip-white dark:bg-report-dark border-l border-logip-border dark:border-report-border p-6 flex-col gap-6 hidden xl:flex transition-all duration-300 pointer-events-auto`}>

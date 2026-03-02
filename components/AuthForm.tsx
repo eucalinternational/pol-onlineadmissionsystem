@@ -181,8 +181,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ schoolSlug, admissionSlug, onVerifi
 
   // Multi-tenancy isolation: determine context based on slugs
   const activeSchool = useMemo(() => {
-      if (schoolSlug) return schools.find(s => s.slug === schoolSlug);
-      return schools.find(s => s.id === 's1'); // Default fallback
+      const school = schoolSlug ? schools.find(s => s.slug === schoolSlug) : schools.find(s => s.id === 's1');
+      if (school) {
+          document.title = `${school.name} - Online Admission Portal`;
+      }
+      return school;
   }, [schools, schoolSlug]);
 
   const activeAdmission = useMemo(() => {
@@ -599,9 +602,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ schoolSlug, admissionSlug, onVerifi
         </form>
         <div className="text-center mt-8 flex justify-center items-center gap-4">
           {effectiveSettings.enableProtocolApplication && (
-            <><button onClick={onSwitchToProtocolAdmission} type="button" className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 transition-colors"><span className="material-symbols-outlined text-base">headphones</span>Protocol Admission</button><span className="text-gray-300 dark:text-gray-600">|</span></>
+            <button
+              onClick={onSwitchToProtocolAdmission}
+              type="button"
+              className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">headphones</span>
+              Protocol Admission
+            </button>
           )}
-          <button onClick={onSwitchToAdmin} type="button" className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 transition-colors"><span className="material-symbols-outlined text-base">dashboard</span>Admin Dashboard</button>
         </div>
       </div>
 

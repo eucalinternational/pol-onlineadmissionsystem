@@ -6,6 +6,7 @@ import AdminLogin from './components/admin/AdminLogin';
 import PaymentGateway from './components/PaymentGateway';
 import ApplicantLoginForm from './components/ApplicantLoginForm';
 import ProtocolAdmissionPage from './components/ProtocolAdmissionPage';
+import LandingPage from './components/LandingPage';
 import { StudentStatus } from './components/admin/pages/StudentsPage';
 
 type StudentView = 'auth' | 'payment' | 'applicant_login' | 'details' | 'protocol_admission';
@@ -17,9 +18,18 @@ function App() {
     return false;
   });
 
+  // Derive routing context from the URL
+  // Student routes look like: /:schoolSlug/:admissionSlug
+  // Admin login route: /login/admin
+  const pathSegments = window.location.pathname.split('/').filter(Boolean);
+  const isAdminLoginRoute = pathSegments[0] === 'login' && pathSegments[1] === 'admin';
+  const isLandingRoute = pathSegments.length === 0 && !isAdminLoginRoute;
+  const schoolSlugFromPath = !isAdminLoginRoute && pathSegments.length >= 1 ? pathSegments[0] : undefined;
+  const admissionSlugFromPath = !isAdminLoginRoute && pathSegments.length >= 2 ? pathSegments[1] : undefined;
+
   const [currentView, setCurrentView] = useState<StudentView>('auth');
   const [verifiedStudent, setVerifiedStudent] = useState<Student | null>(null);
-  const [appMode, setAppMode] = useState<'student' | 'admin'>('student');
+  const [appMode, setAppMode] = useState<'student' | 'admin'>(() => (isAdminLoginRoute ? 'admin' : 'student'));
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus | StudentStatus>('not_submitted');
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [activePaymentType, setActivePaymentType] = useState<'initial' | 'doc_access'>('initial');
@@ -90,6 +100,26 @@ function App() {
   const isDashboardView = (appMode === 'admin' && !!adminUser) || 
                           (appMode === 'student' && currentView === 'details');
 
+  // If someone visits /login or any other /login/* path that is NOT /login/admin,
+  // show a 404-style page instead of the student portal.
+  if (pathSegments[0] === 'login' && !isAdminLoginRoute) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-logip-bg dark:bg-background-dark p-4">
+        <div className="bg-logip-white dark:bg-report-dark rounded-xl border border-logip-border dark:border-report-border px-8 py-10 max-w-lg w-full text-center">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">404 - Not Found</h1>
+          <p className="text-base text-gray-600 dark:text-gray-400 mb-6">
+            The resource requested could not be found on this server.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Root path: show Packets Out landing page for selecting school
+  if (isLandingRoute) {
+    return <LandingPage toggleTheme={toggleTheme} isDarkMode={isDarkMode} />;
+  }
+
   if (isDashboardView) {
     const dashboardContent = appMode === 'admin' && adminUser
       ? <AdminLayout
@@ -124,7 +154,15 @@ function App() {
       authContentKey = currentView;
       switch (currentView) {
           case 'auth':
-              authContent = <AuthForm onVerificationSuccess={handleVerificationSuccess} onSwitchToAdmin={handleSwitchToAdmin} onSwitchToProtocolAdmission={handleSwitchToProtocolAdmission} />;
+              authContent = (
+                <AuthForm
+                  schoolSlug={schoolSlugFromPath}
+                  admissionSlug={admissionSlugFromPath}
+                  onVerificationSuccess={handleVerificationSuccess}
+                  onSwitchToAdmin={handleSwitchToAdmin}
+                  onSwitchToProtocolAdmission={handleSwitchToProtocolAdmission}
+                />
+              );
               break;
           case 'payment':
               const financialsKey = `financialsSettings_${verifiedStudent?.schoolId}_${verifiedStudent?.admissionId}`;
@@ -147,7 +185,13 @@ function App() {
               authContent = <ApplicantLoginForm student={verifiedStudent!} onLoginSuccess={handleApplicantLoginSuccess} />;
               break;
           case 'protocol_admission':
-              authContent = <ProtocolAdmissionPage onReturnToVerification={handleReturnToVerification} />;
+              authContent = (
+                <ProtocolAdmissionPage
+                  onReturnToVerification={handleReturnToVerification}
+                  schoolSlug={schoolSlugFromPath}
+                  admissionSlug={admissionSlugFromPath}
+                />
+              );
               break;
           default:
               authContent = <div className="p-10 text-center">Error: Invalid view</div>;
