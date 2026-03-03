@@ -171,7 +171,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ toggleTheme, isDarkMode }) =>
             <span className="block whitespace-nowrap">for Senior High Schools.</span>
           </h1>
           <p className="text-base sm:text-lg text-logip-text-body/80 dark:text-dark-text-secondary max-w-xl mb-6">
-            Packets Out powers secure, modern admission portals for schools across Ghana.
+            Secure, modern online admission portals for schools across Ghana.
             Choose your school to verify placement, complete forms, and download admission documents.
           </p>
           <div className="flex flex-col gap-2 text-xs sm:text-sm text-logip-text-subtle dark:text-dark-text-secondary mb-10">
@@ -247,7 +247,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ toggleTheme, isDarkMode }) =>
         </section>
       </main>
 
-      <footer className="fixed bottom-4 left-1/2 -translate-x-1/2 text-xs text-logip-text-subtle/80 dark:text-dark-text-secondary">
+      <footer className="hidden lg:block lg:fixed lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 text-xs text-logip-text-subtle/80 dark:text-dark-text-secondary">
         Powered by <span className="font-semibold">Packets Out</span>
       </footer>
     </div>
