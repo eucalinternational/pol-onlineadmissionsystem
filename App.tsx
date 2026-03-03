@@ -48,31 +48,42 @@ function App() {
     }
   }, [isDarkMode]);
 
+  const setPacketsOutBranding = () => {
+    document.title = 'Packets Out - Online Admission System';
+
+    try {
+      const head = document.head || document.getElementsByTagName('head')[0];
+      if (!head) return;
+
+      let link = head.querySelector("link[rel*='icon']") as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        head.appendChild(link);
+      }
+
+      const svgIcon =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="6" y="6" width="5" height="20" rx="2.5" fill="#111827"/><rect x="14" y="9" width="5" height="17" rx="2.5" fill="#111827"/><path d="M22 11L27 9L28 14L24 15.5L22 11Z" fill="none" stroke="#0EA5E9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 11L25.5 14.5L28 14" fill="none" stroke="#0EA5E9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      const encoded = encodeURIComponent(svgIcon);
+      link.href = `data:image/svg+xml,${encoded}`;
+    } catch {
+      // ignore favicon errors
+    }
+  };
+
   // Set title and favicon for admin login route
   useEffect(() => {
     if (isAdminLoginRoute && !adminUser) {
-      document.title = 'Packets Out - Online Admission System';
-
-      try {
-        const head = document.head || document.getElementsByTagName('head')[0];
-        if (!head) return;
-
-        let link = head.querySelector("link[rel*='icon']") as HTMLLinkElement | null;
-        if (!link) {
-          link = document.createElement('link');
-          link.rel = 'icon';
-          head.appendChild(link);
-        }
-
-        const svgIcon =
-          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="5" y="4" width="5" height="20" rx="2" fill=\"#111827\"/><rect x="13" y="7" width="5" height="17" rx="2" fill=\"#111827\"/><circle cx="23" cy="22" r="3" fill=\"#111827\"/></svg>';
-        const encoded = encodeURIComponent(svgIcon);
-        link.href = `data:image/svg+xml,${encoded}`;
-      } catch {
-        // ignore favicon errors
-      }
+      setPacketsOutBranding();
     }
   }, [isAdminLoginRoute, adminUser]);
+
+  // Set title and favicon for main landing page
+  useEffect(() => {
+    if (isLandingRoute) {
+      setPacketsOutBranding();
+    }
+  }, [isLandingRoute]);
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
   
@@ -208,7 +219,13 @@ function App() {
               );
               break;
           case 'applicant_login':
-              authContent = <ApplicantLoginForm student={verifiedStudent!} onLoginSuccess={handleApplicantLoginSuccess} />;
+              authContent = (
+                <ApplicantLoginForm
+                  student={verifiedStudent!}
+                  onLoginSuccess={handleApplicantLoginSuccess}
+                  onClose={handleReturnToVerification}
+                />
+              );
               break;
           case 'protocol_admission':
               authContent = (
@@ -249,7 +266,7 @@ function App() {
         </main>
         <footer className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
           <p className="text-xs text-gray-500/80 dark:text-gray-400/60">
-            Powered by: Packets Out LLC
+            Powered by Packets Out
           </p>
         </footer>
       </div>

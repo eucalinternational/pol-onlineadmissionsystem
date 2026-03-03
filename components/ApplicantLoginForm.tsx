@@ -1,36 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Student } from './StudentDetails';
 import Modal from './Modal';
-import { Admission } from './admin/pages/SettingsPage';
+import { Admission, School, initialSchools } from './admin/pages/SettingsPage';
 import { isNotificationActive } from './AuthForm';
 import NotificationPreviewModal from './admin/shared/NotificationPreviewModal';
 import VideoPreviewModal from './admin/shared/VideoPreviewModal';
-
-const PekiLogo: React.FC = () => {
-    return (
-        <div className="flex items-center justify-center gap-2 mb-6">
-            <svg className="w-7 h-7 text-emerald-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 12.6667L9.33333 18L20 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <div className="text-sm font-medium text-gray-800 dark:text-gray-100 text-left leading-tight">
-                <div>Peki</div>
-                <div className="flex items-center gap-1.5">
-                    <span className="text-gray-400/80 dark:text-gray-600/80">|</span>
-                    <span>Senior</span>
-                    <span className="text-gray-400/80 dark:text-gray-600/80">|</span>
-                </div>
-                <div>High</div>
-            </div>
-        </div>
-    )
-}
+import { useLocalStorage } from './hooks/useLocalStorage';
 
 interface ApplicantLoginFormProps {
   student: Student;
   onLoginSuccess: () => void;
+  onClose?: () => void;
 }
 
-const ApplicantLoginForm: React.FC<ApplicantLoginFormProps> = ({ student, onLoginSuccess }) => {
+const ApplicantLoginForm: React.FC<ApplicantLoginFormProps> = ({ student, onLoginSuccess, onClose }) => {
   const [serialNumber, setSerialNumber] = useState('');
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -56,6 +39,12 @@ const ApplicantLoginForm: React.FC<ApplicantLoginFormProps> = ({ student, onLogi
   const [videoNotification, setVideoNotification] = useState<any | null>(() => getInitialNotification('video'));
   const [isPopupBannerVisible, setIsPopupBannerVisible] = useState(() => !!getInitialNotification('popup'));
   const [isVideoNotificationVisible, setIsVideoNotificationVisible] = useState(() => !!getInitialNotification('video'));
+
+  const [schools] = useLocalStorage<School[]>('admin_schools', initialSchools);
+  const activeSchool = useMemo(
+    () => schools.find((s) => s.id === student.schoolId) || null,
+    [schools, student.schoolId]
+  );
 
   useEffect(() => {
     if (popupBanner && popupBanner.frequency === 'once') sessionStorage.setItem(`popup_shown_applicant_login_${student.admissionId}`, 'true');
@@ -148,7 +137,33 @@ const ApplicantLoginForm: React.FC<ApplicantLoginFormProps> = ({ student, onLogi
         )}
 
         <div>
-            <div className="text-center mb-8"><PekiLogo /><h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Applicant Login</h1><p className="text-base text-gray-500 dark:text-gray-400 mt-8">Enter the credentials you received after payment.</p></div>
+            <div className="relative mb-8">
+                {onClose && (
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="absolute top-0 right-0 p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-gray-800"
+                        aria-label="Close"
+                    >
+                        <span className="material-symbols-outlined text-lg">close</span>
+                    </button>
+                )}
+                <div className="text-center">
+                    {activeSchool?.logo && (
+                        <div className="flex items-center justify-center mb-4">
+                            <img
+                                src={activeSchool.logo}
+                                alt={activeSchool.name}
+                                className="h-16 w-auto object-contain"
+                            />
+                        </div>
+                    )}
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Applicant Login</h1>
+                    <p className="text-base text-gray-500 dark:text-gray-400 mt-4">
+                        Enter the credentials you received after payment.
+                    </p>
+                </div>
+            </div>
             <form onSubmit={handleSubmit}>
                 <div className="mb-4">
                   <div className="relative">

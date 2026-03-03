@@ -16,12 +16,39 @@ const ADMIN_USERS: (AdminUser & { password: string; phoneNumber?: string; school
 const PekiLogo: React.FC = () => {
     return (
         <div className="flex items-center justify-center gap-2.5 mb-6">
-            <div className="flex gap-1">
+            <div className="flex items-end gap-0.5">
                 <div className="w-2 h-6 bg-logip-text-header dark:bg-gray-100 rounded-full"></div>
-                <div className="w-2 h-4 bg-logip-text-header dark:bg-gray-100 rounded-full self-center"></div>
-                <div className="w-2 h-2 bg-logip-text-header dark:bg-gray-100 rounded-full self-end"></div>
+                <div className="w-2 h-4 bg-logip-text-header dark:bg-gray-100 rounded-full"></div>
+                <svg
+                    className="w-5 h-5 text-sky-500"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <path
+                        d="M3 11L10.5 4H21L13.5 11H3Z"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                    <path
+                        d="M13.5 11L21 4V14L13.5 21V11Z"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                    <path
+                        d="M3 11L13.5 11"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                </svg>
             </div>
-            <span className="font-bold text-2xl text-logip-text-header dark:text-gray-100">logip</span>
+            <span className="font-bold text-2xl text-logip-text-header dark:text-gray-100">Packets Out</span>
         </div>
     );
 };
@@ -284,13 +311,23 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onReturnToStude
     <>
       <div>
         <div className="text-center mb-8">
-          <PekiLogo />
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">
-            {loginStep === 'credentials' ? 'Admin Portal' : 'Two-Factor Authentication'}
-          </h1>
-          <p className="text-base text-gray-500 dark:text-gray-400 mt-8">
-            {loginStep === 'credentials' ? 'Sign in to your account' : 'Enter the code to continue'}
-          </p>
+          {loginStep === 'credentials' ? (
+            <>
+              <PekiLogo />
+              <p className="text-base text-gray-500 dark:text-gray-400 mt-6">
+                Sign in to your account
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100">
+                Two-Factor Authentication
+              </h1>
+              <p className="text-base text-gray-500 dark:text-gray-400 mt-4">
+                Enter the code to continue
+              </p>
+            </>
+          )}
         </div>
         
         {loginStep === 'credentials' ? renderCredentialsForm() : render2faForm()}
