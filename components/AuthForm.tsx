@@ -33,6 +33,25 @@ const defaultAdmissionSettings: AdmissionSettings = {
     maintenanceCountdownEnd: null,
 };
 
+const updateFaviconForSchool = (school?: School | null) => {
+    if (!school?.logo) return;
+    if (typeof document === 'undefined') return;
+    try {
+        const head = document.head || document.getElementsByTagName('head')[0];
+        if (!head) return;
+
+        const existingIcons = head.querySelectorAll("link[rel*='icon']");
+        existingIcons.forEach(el => head.removeChild(el));
+
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.href = school.logo;
+        head.appendChild(link);
+    } catch (e) {
+        // Silently ignore favicon update errors
+    }
+};
+
 // Helper function to check if a notification should be active
 export const isNotificationActive = (notif: any, admissionId: string, type: 'scrolling' | 'popup' | 'video', currentPage: string) => {
     if (!notif || !notif.enabled) {
@@ -184,6 +203,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ schoolSlug, admissionSlug, onVerifi
       const school = schoolSlug ? schools.find(s => s.slug === schoolSlug) : schools.find(s => s.id === 's1');
       if (school) {
           document.title = `${school.name} - Online Admission Portal`;
+          updateFaviconForSchool(school);
       }
       return school;
   }, [schools, schoolSlug]);
@@ -529,17 +549,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ schoolSlug, admissionSlug, onVerifi
                     onEnd={handleMaintenanceEnd} 
                 />
             )}
-
-            <div className="mt-12 pt-8 border-t border-gray-200 dark:border-white/5">
-                <button 
-                    onClick={onSwitchToAdmin} 
-                    type="button" 
-                    className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:text-red-600 dark:hover:text-red-500 transition-colors uppercase tracking-wider"
-                >
-                    <span className="material-symbols-outlined text-lg">dashboard</span>
-                    Admin Dashboard
-                </button>
-            </div>
         </div>
     );
   }

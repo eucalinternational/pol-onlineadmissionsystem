@@ -749,9 +749,11 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ selectedSchool, selectedAdm
 
     const handleResetDailyLimit = (student: AdminStudent) => {
         const logKey = `edit_app_limit_${student.schoolId}_${student.indexNumber}`;
+        const retrievalLogKey = `credential_retrieval_log_${student.schoolId}_${student.indexNumber}`;
         const resetLogKey = `edit_app_limit_reset_log_${student.schoolId}_${student.indexNumber}`;
         try {
             localStorage.removeItem(logKey);
+            localStorage.removeItem(retrievalLogKey);
 
             let resetLog: { totalResets: number; lastResetAt: string; lastResetBy: string; lastResetByEmail?: string } = {
                 totalResets: 0,
@@ -771,7 +773,7 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ selectedSchool, selectedAdm
             resetLog.lastResetByEmail = adminUser.email;
             localStorage.setItem(resetLogKey, JSON.stringify(resetLog));
 
-            showToast(`Daily edit limit reset for ${student.name}.`, 'info');
+            showToast(`Daily limits (edit & retrieval) reset for ${student.name} on this device.`, 'info');
             logActivity(
                 { name: adminUser.name, avatar: adminUser.avatar || '' },
                 'reset daily edit limit',

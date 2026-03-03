@@ -392,7 +392,7 @@ const AdmissionDocumentsPage: React.FC<AdmissionDocumentsPageProps> = ({ student
                     <p className="hidden sm:block text-sm text-gray-600 dark:text-gray-400 font-medium">Download your admission letter, prospectus, and other required documents from this section.</p>
                 </div>
                 {reopeningDateDisplay && (
-                    <div className="flex flex-row items-center gap-3 self-end sm:self-auto">
+                    <div className="flex flex-row items-center gap-3 self-start sm:self-auto justify-start sm:justify-end">
                         <span className="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest whitespace-nowrap">Admission/Reporting Date</span>
                         <span className="text-sm font-black text-white bg-red-600 px-4 py-2 rounded-xl shadow-md whitespace-nowrap leading-none flex items-center h-fit transform hover:scale-105 transition-transform">{reopeningDateDisplay}</span>
                     </div>

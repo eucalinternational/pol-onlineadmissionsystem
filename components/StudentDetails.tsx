@@ -52,6 +52,25 @@ export interface Student {
   parentContact?: string; 
 }
 
+const updateFaviconForSchool = (school?: School | null) => {
+    if (!school?.logo) return;
+    if (typeof document === 'undefined') return;
+    try {
+        const head = document.head || document.getElementsByTagName('head')[0];
+        if (!head) return;
+
+        const existingIcons = head.querySelectorAll("link[rel*='icon']");
+        existingIcons.forEach(el => head.removeChild(el));
+
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.href = school.logo;
+        head.appendChild(link);
+    } catch (e) {
+        // Silently ignore favicon update errors
+    }
+};
+
 export interface AiSettings {
     enableAiChat: boolean;
     systemInstruction: string;
@@ -297,6 +316,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
       const s = schools.find(s => s.id === initialStudent.schoolId);
       if (s) {
           document.title = `${s.name} - Online Admission Portal`;
+          updateFaviconForSchool(s);
       }
       return s;
   }, [schools, initialStudent.schoolId]);
@@ -968,15 +988,14 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
 
     return (
         <>
-            {/* Main Navigation Bar - Docked at the bottom for mobile/tablet */}
-            <div className={`lg:hidden fixed bottom-0 left-0 w-full z-[90] pointer-events-none flex flex-col items-stretch transition-transform duration-500`}>
-                
-                {/* Repositioned Edit Application Button: Now clearly at the top of the stack as requested */}
+            {/* Mobile / Tablet bottom navigation – floating dock style */}
+            <div className="lg:hidden fixed inset-x-0 bottom-0 z-[90] pointer-events-none flex flex-col items-stretch pb-3">
+                {/* Elevated Edit Application pill above the dock */}
                 {showEditButton && (
                     <div className="flex justify-center w-full px-4 mb-3 animate-slideInUp">
                         <button 
                             onClick={(e) => { e.stopPropagation(); handleRequestUnlock(); }} 
-                            className="pointer-events-auto w-full py-4 text-sm font-normal rounded-2xl text-white bg-blue-600 shadow-2xl transform active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+                            className="pointer-events-auto w-full max-w-md py-3 text-sm font-semibold rounded-2xl text-white bg-blue-600 shadow-2xl transform active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
                         >
                             <span className="material-symbols-outlined text-lg">edit_note</span>
                             Edit Application
@@ -984,30 +1003,32 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
                     </div>
                 )}
 
-                {/* Main Navigation Bar - Higher Z-Index and optimized padding */}
-                <div className="w-full bg-white dark:bg-report-dark border-t border-gray-200 dark:border-white/5 shadow-2xl px-2 py-2 flex justify-between items-center relative pointer-events-auto overflow-hidden">
-                    {itemsToDisplay.map((item, idx) => {
-                        const isTrulyActive = currentPage === item.id;
-                        return (
-                            <button 
-                                key={`${item.id}-${idx}`} 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (item.id === 'home') {
-                                        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-                                    } else {
-                                        handleNavClick(item.id as Page);
-                                    }
-                                }} 
-                                className={`flex-1 flex flex-col items-center justify-center py-1.5 rounded-xl transition-colors duration-200 cursor-pointer active:scale-95 touch-manipulation focus:outline-none select-none ${
-                                    isTrulyActive ? 'bg-gray-100 dark:bg-gray-800/80' : 'bg-transparent'
-                                }`}
-                            >
-                                <span className={`material-symbols-outlined text-2xl transition-colors duration-200 ${item.color} ${isTrulyActive ? 'opacity-100' : 'opacity-70'}`}>{item.icon}</span>
-                                <span className={`text-[9px] mt-1 transition-colors duration-200 uppercase tracking-tighter font-normal ${isTrulyActive ? item.color : 'text-gray-400 dark:text-gray-500'}`}>{item.label}</span>
-                            </button>
-                        );
-                    })}
+                {/* Floating nav bar */}
+                <div className="pointer-events-auto px-4">
+                    <div className="max-w-md mx-auto rounded-3xl bg-white/95 dark:bg-report-dark/95 border border-gray-200/80 dark:border-white/10 shadow-[0_12px_35px_rgba(15,23,42,0.25)] backdrop-blur-md px-3 py-2 flex justify-between items-center">
+                        {itemsToDisplay.map((item, idx) => {
+                            const isTrulyActive = currentPage === item.id;
+                            return (
+                                <button 
+                                    key={`${item.id}-${idx}`} 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (item.id === 'home') {
+                                            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                                        } else {
+                                            handleNavClick(item.id as Page);
+                                        }
+                                    }} 
+                                    className={`flex-1 flex flex-col items-center justify-center py-1.5 rounded-2xl transition-all duration-200 cursor-pointer active:scale-95 touch-manipulation focus:outline-none select-none ${
+                                        isTrulyActive ? 'bg-gray-100/90 dark:bg-gray-800/80' : 'bg-transparent'
+                                    }`}
+                                >
+                                    <span className={`material-symbols-outlined text-2xl transition-colors duration-200 ${item.color} ${isTrulyActive ? 'opacity-100' : 'opacity-70'}`}>{item.icon}</span>
+                                    <span className={`text-[9px] mt-1 transition-colors duration-200 uppercase tracking-tight font-medium ${isTrulyActive ? item.color : 'text-gray-400 dark:text-gray-500'}`}>{item.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </>
@@ -1032,22 +1053,44 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
                     {logoutAndBranding(true)}
                 </aside>
                 <main className={`flex-1 flex flex-col overflow-hidden`}>
-                    <header className="flex-shrink-0 flex items-center justify-between gap-4 px-4 py-3 sm:px-6 border-b border-logip-border dark:border-report-border bg-logip-white dark:bg-report-dark">
-                        <div className="flex items-center justify-between w-full lg:w-auto gap-4 min-w-0">
-                            <div className="flex items-center gap-4">
-                                <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-1.5 -ml-1 rounded-md text-logip-text-body dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Open menu"><span className="material-symbols-outlined text-xl">menu</span></button>
-                                <SchoolLogo school={school} />
-                                {admission && (<><span className="font-light text-2xl text-gray-300 dark:text-gray-600 hidden sm:block">|</span><h1 className="text-lg text-gray-500 dark:text-gray-400 truncate">{admission.title}</h1></>)}
+                    {/* Mobile/Tablet only: header matching Personal Information page */}
+                    <header className="lg:hidden flex-shrink-0 flex flex-col gap-4 px-4 py-3 sm:px-6 border-b border-logip-border dark:border-report-border bg-logip-white dark:bg-report-dark">
+                        <div className="flex items-center justify-between w-full gap-4 min-w-0">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <button onClick={() => setIsSidebarOpen(true)} className="p-1.5 -ml-1 rounded-md text-black dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0" aria-label="Open menu"><span className="material-symbols-outlined text-xl">menu</span></button>
+                                <div className="min-w-0">
+                                    <h1 className="text-xl font-bold text-black dark:text-gray-100 truncate">{pageTitles.admission_docs.title}</h1>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 truncate">{pageTitles.admission_docs.subtitle}</p>
+                                </div>
                             </div>
-                            <button onClick={toggleTheme} className="lg:hidden p-2 rounded-lg border border-logip-border dark:border-report-border text-logip-text-body dark:text-gray-400 bg-logip-white/50 dark:bg-report-button hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"><span className="material-symbols-outlined text-xl">{isDarkMode ? 'light_mode' : 'dark_mode'}</span></button>
+                            <button onClick={toggleTheme} className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm flex-shrink-0" aria-label="Toggle theme"><span className="material-symbols-outlined text-xl">{isDarkMode ? 'light_mode' : 'dark_mode'}</span></button>
                         </div>
-                        <div className="flex items-center justify-between w-full lg:w-auto gap-4">
-                            <div className="text-left lg:text-right">
+                        <div className="flex items-center justify-between w-full gap-4">
+                            <div className="min-w-0 flex-1">
+                                <h2 className="text-xl font-bold text-black dark:text-gray-100 truncate" title={liveStudent.name}>Hello, {(liveStudent.name.length > 24 ? liveStudent.name.slice(0, 24) + '...' : liveStudent.name)}</h2>
+                                <div className="flex flex-row items-center gap-2 mt-1 flex-wrap">{currentStatus.text && <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm ${currentStatus.color}`}>{currentStatus.text}</div>}{liveStudent.isProtocol && <ProtocolIndicator />}</div>
+                            </div>
+                            <div className="flex flex-col items-end flex-shrink-0">
+                                <img src={avatarUrl} alt={liveStudent.name} className="w-12 h-12 rounded-xl object-cover shadow-sm" />
+                                {lastLoginTime && <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">Last logged in: {lastLoginTime}</span>}
+                            </div>
+                        </div>
+                    </header>
+                    {/* Desktop: original header */}
+                    <header className="hidden lg:flex flex-shrink-0 flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6 border-b border-logip-border dark:border-report-border bg-logip-white dark:bg-report-dark">
+                        <div className="flex items-center justify-between gap-4 min-w-0">
+                            <div className="flex items-center gap-4">
+                                <SchoolLogo school={school} />
+                                {admission && (<><span className="font-light text-2xl text-gray-300 dark:text-gray-600">|</span><h1 className="text-lg text-gray-500 dark:text-gray-400 truncate">{admission.title}</h1></>)}
+                            </div>
+                            <button onClick={toggleTheme} className="p-2 rounded-lg border border-logip-border dark:border-report-border text-logip-text-body dark:text-gray-400 bg-logip-white/50 dark:bg-report-button hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"><span className="material-symbols-outlined text-xl">{isDarkMode ? 'light_mode' : 'dark_mode'}</span></button>
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="text-right">
                                 <h2 className="text-lg font-normal text-black dark:text-gray-100">Congratulations!, <span className="font-bold">{liveStudent.name}</span></h2>
-                                <div className="flex flex-row items-center justify-start lg:justify-end gap-2 mt-1">{lastLoginTime && <span className="text-xs text-gray-500 dark:text-gray-400">Last logged in: {lastLoginTime}</span>}{currentStatus.text && <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm ${currentStatus.color}`}>{currentStatus.text}</div>}{liveStudent.isProtocol && <ProtocolIndicator />}</div>
+                                <div className="flex flex-row items-center justify-end gap-2 mt-1">{lastLoginTime && <span className="text-xs text-gray-500 dark:text-gray-400">Last logged in: {lastLoginTime}</span>}{currentStatus.text && <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm ${currentStatus.color}`}>{currentStatus.text}</div>}{liveStudent.isProtocol && <ProtocolIndicator />}</div>
                             </div>
                             <img src={avatarUrl} alt={liveStudent.name} className="w-12 h-12 rounded-full object-cover" />
-                            <button onClick={toggleTheme} className="hidden lg:flex w-10 h-10 flex-shrink-0 items-center justify-center rounded-full border border-logip-border dark:border-report-border text-logip-text-body dark:text-gray-400 hover:bg-logip-border/60 dark:hover:bg-gray-800 transition-colors" aria-label="Toggle theme"><span className="material-symbols-outlined text-xl">{isDarkMode ? 'light_mode' : 'dark_mode'}</span></button>
                         </div>
                     </header>
                     <div className="flex-1 flex overflow-hidden min-h-0 px-4 pt-4 pb-0 sm:p-6 gap-6 pb-24 lg:pb-6">
@@ -1113,20 +1156,42 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
         {logoutAndBranding(true)}
       </aside>
       <main className={`flex-1 px-4 pt-4 pb-0 sm:p-8 flex flex-col overflow-hidden gap-6 pb-20 lg:pb-8 transition-all duration-300 pointer-events-auto`}>
-        <header className="flex-shrink-0 flex flex-wrap items-center justify-between gap-y-6 gap-x-4">
+        {/* Mobile/Tablet only: same header as Admission Documents page */}
+        <header className="lg:hidden flex-shrink-0 flex flex-col gap-4 px-4 py-3 sm:px-6 border-b border-logip-border dark:border-report-border bg-logip-white dark:bg-report-dark">
+            <div className="flex items-center justify-between w-full gap-4 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <button onClick={() => setIsSidebarOpen(true)} className="p-1.5 -ml-1 rounded-md text-black dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0" aria-label="Open menu"><span className="material-symbols-outlined text-xl">menu</span></button>
+                    <div className="min-w-0">
+                        <h1 className="text-xl font-bold text-black dark:text-gray-100 truncate">{pageTitles[currentPage]?.title || 'Dashboard'}</h1>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 truncate">{pageTitles[currentPage]?.subtitle || 'Welcome'}</p>
+                    </div>
+                </div>
+                <button onClick={toggleTheme} className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm flex-shrink-0" aria-label="Toggle theme"><span className="material-symbols-outlined text-xl">{isDarkMode ? 'light_mode' : 'dark_mode'}</span></button>
+            </div>
+            <div className="flex items-center justify-between w-full gap-4">
+                <div className="min-w-0 flex-1">
+                    <h2 className="text-xl font-bold text-black dark:text-gray-100 truncate" title={liveStudent.name}>Hello, {(liveStudent.name.length > 24 ? liveStudent.name.slice(0, 24) + '...' : liveStudent.name)}</h2>
+                    <div className="flex flex-row items-center gap-2 mt-1 flex-wrap">{currentStatus.text && <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm ${currentStatus.color}`}>{currentStatus.text}</div>}{liveStudent.isProtocol && <ProtocolIndicator />}</div>
+                </div>
+                <div className="flex flex-col items-end flex-shrink-0">
+                    <img src={avatarUrl} alt={liveStudent.name} className="w-12 h-12 rounded-xl object-cover shadow-sm" />
+                    {lastLoginTime && <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">Last logged in: {lastLoginTime}</span>}
+                </div>
+            </div>
+        </header>
+        {/* Desktop only */}
+        <header className="hidden lg:flex flex-shrink-0 flex-wrap items-center justify-between gap-y-6 gap-x-4">
             <div className="flex items-center justify-between w-full lg:w-auto gap-4">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-1.5 -ml-1 rounded-md text-logip-text-body dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><span className="material-symbols-outlined text-xl">menu</span></button>
                     <div><h1 className="text-xl font-bold text-black dark:text-gray-100">{pageTitles[currentPage]?.title || 'Dashboard'}</h1><p className="text-sm text-black dark:text-gray-400 mt-1">{pageTitles[currentPage]?.subtitle || 'Welcome'}</p></div>
                 </div>
-                <button onClick={toggleTheme} className="lg:hidden p-2 rounded-lg border border-logip-border dark:border-report-border text-logip-text-body dark:text-gray-400 bg-logip-white/50 dark:bg-report-button hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"><span className="material-symbols-outlined text-xl">{isDarkMode ? 'light_mode' : 'dark_mode'}</span></button>
             </div>
             <div className="flex items-center justify-between w-full lg:w-auto gap-4">
-                <div className="text-left lg:text-right">
-                    <h2 className="text-lg font-bold text-black dark:text-gray-100">Hello, {liveStudent.name}</h2>
-                    <div className="mt-1 flex items-center justify-start lg:justify-end gap-2">{currentStatus.text && <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm text-center ${currentStatus.color}`}>{currentStatus.text}</div>}{liveStudent.isProtocol && <ProtocolIndicator />}</div>
+                <div className="text-left lg:text-right min-w-0 flex-1">
+                    <h2 className="text-lg font-bold text-black dark:text-gray-100 truncate" title={liveStudent.name}>Hello, {(liveStudent.name.length > 24 ? liveStudent.name.slice(0, 24) + '...' : liveStudent.name)}</h2>
+                    <div className="mt-1 flex flex-wrap items-center justify-start lg:justify-end gap-2">{lastLoginTime && <span className="text-xs text-gray-500 dark:text-gray-400">Last logged in: {lastLoginTime}</span>}{currentStatus.text && <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm text-center ${currentStatus.color}`}>{currentStatus.text}</div>}{liveStudent.isProtocol && <ProtocolIndicator />}</div>
                 </div>
-                <img src={avatarUrl} alt={liveStudent.name} className="w-16 h-16 rounded-lg object-cover" />
+                <img src={avatarUrl} alt={liveStudent.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
             </div>
         </header>
         <div className="flex-1 bg-logip-white dark:bg-report-dark border border-logip-border dark:border-report-border rounded-xl flex flex-col overflow-hidden min-h-0">

@@ -21,6 +21,25 @@ const isNotificationActive = (notif: any, admissionId: string, type: 'scrolling'
     return true;
 };
 
+const updateFaviconForSchool = (school?: School | null) => {
+    if (!school?.logo) return;
+    if (typeof document === 'undefined') return;
+    try {
+        const head = document.head || document.getElementsByTagName('head')[0];
+        if (!head) return;
+
+        const existingIcons = head.querySelectorAll("link[rel*='icon']");
+        existingIcons.forEach(el => head.removeChild(el));
+
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.href = school.logo;
+        head.appendChild(link);
+    } catch (e) {
+        // Silently ignore favicon update errors
+    }
+};
+
 interface ProtocolAdmissionPageProps {
   onReturnToVerification: () => void;
   schoolSlug?: string;
@@ -55,9 +74,18 @@ const ProtocolAdmissionPage: React.FC<ProtocolAdmissionPageProps> = ({ onReturnT
     const activeSchool = useMemo(() => {
         if (schoolSlug) {
             const bySlug = schools.find(s => s.slug === schoolSlug);
-            if (bySlug) return bySlug;
+            if (bySlug) {
+                document.title = `${bySlug.name} - Online Admission Portal`;
+                updateFaviconForSchool(bySlug);
+                return bySlug;
+            }
         }
-        return schools.find(s => s.id === 's1') || null;
+        const fallback = schools.find(s => s.id === 's1') || null;
+        if (fallback) {
+            document.title = `${fallback.name} - Online Admission Portal`;
+            updateFaviconForSchool(fallback);
+        }
+        return fallback;
     }, [schools, schoolSlug]);
 
     const activeAdmission = useMemo(() => {
