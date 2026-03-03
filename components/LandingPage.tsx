@@ -108,7 +108,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ toggleTheme, isDarkMode }) =>
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-sky-50 to-indigo-50 dark:from-background-dark dark:via-dark-bg dark:to-report-dark flex flex-col items-center justify-center px-4 py-10">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-sky-50 to-indigo-50 dark:from-background-dark dark:via-dark-bg dark:to-report-dark flex flex-col items-center justify-start px-4 pt-14 pb-10">
       <header className="w-full max-w-6xl flex items-center justify-between mb-10">
         <div className="flex items-center gap-3">
           <div className="flex items-end gap-0.5">
@@ -160,7 +160,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ toggleTheme, isDarkMode }) =>
         </button>
       </header>
 
-      <main className="w-full max-w-6xl grid lg:grid-cols-[1.25fr,1.2fr] gap-10 items-start">
+      <main className="w-full max-w-6xl grid lg:grid-cols-[1.25fr,1.2fr] gap-10 items-start mt-6">
         <section>
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/30 mb-4">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
