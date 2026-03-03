@@ -15,22 +15,16 @@ const ADMIN_USERS: (AdminUser & { password: string; phoneNumber?: string; school
 
 const PekiLogo: React.FC = () => {
     return (
-        <div className="flex items-center justify-center gap-2 mb-6">
-            <svg className="w-7 h-7 text-emerald-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 12.6667L9.33333 18L20 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <div className="text-sm font-medium text-gray-800 dark:text-gray-100 text-left leading-tight">
-                <div>Peki</div>
-                <div className="flex items-center gap-1.5">
-                    <span className="text-gray-400/80 dark:text-gray-600/80">|</span>
-                    <span>Senior</span>
-                    <span className="text-gray-400/80 dark:text-gray-600/80">|</span>
-                </div>
-                <div>High</div>
+        <div className="flex items-center justify-center gap-2.5 mb-6">
+            <div className="flex gap-1">
+                <div className="w-2 h-6 bg-logip-text-header dark:bg-gray-100 rounded-full"></div>
+                <div className="w-2 h-4 bg-logip-text-header dark:bg-gray-100 rounded-full self-center"></div>
+                <div className="w-2 h-2 bg-logip-text-header dark:bg-gray-100 rounded-full self-end"></div>
             </div>
+            <span className="font-bold text-2xl text-logip-text-header dark:text-gray-100">logip</span>
         </div>
-    )
-}
+    );
+};
 
 interface AdminLoginProps {
   onLoginSuccess: (user: AdminUser) => void;
@@ -301,16 +295,18 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onReturnToStude
         
         {loginStep === 'credentials' ? renderCredentialsForm() : render2faForm()}
 
-        <div className="text-center mt-8">
-          <button
-            onClick={loginStep === 'credentials' ? onReturnToStudentView : () => { setLoginStep('credentials'); setError(''); }}
-            type="button"
-            className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-          >
-            <span className="material-symbols-outlined text-base">arrow_back</span>
-            {loginStep === 'credentials' ? 'Return to Student Portal' : 'Back to Login'}
-          </button>
-        </div>
+        {loginStep !== 'credentials' && (
+          <div className="text-center mt-8">
+            <button
+              onClick={() => { setLoginStep('credentials'); setError(''); }}
+              type="button"
+              className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">arrow_back</span>
+              Back to Login
+            </button>
+          </div>
+        )}
       </div>
 
        <Modal isOpen={isForgotPasswordModalOpen} onClose={closeForgotPasswordModal}>

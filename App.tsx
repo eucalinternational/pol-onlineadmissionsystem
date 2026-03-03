@@ -48,6 +48,32 @@ function App() {
     }
   }, [isDarkMode]);
 
+  // Set title and favicon for admin login route
+  useEffect(() => {
+    if (isAdminLoginRoute && !adminUser) {
+      document.title = 'Packets Out - Online Admission System';
+
+      try {
+        const head = document.head || document.getElementsByTagName('head')[0];
+        if (!head) return;
+
+        let link = head.querySelector("link[rel*='icon']") as HTMLLinkElement | null;
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          head.appendChild(link);
+        }
+
+        const svgIcon =
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="5" y="4" width="5" height="20" rx="2" fill=\"#111827\"/><rect x="13" y="7" width="5" height="17" rx="2" fill=\"#111827\"/><circle cx="23" cy="22" r="3" fill=\"#111827\"/></svg>';
+        const encoded = encodeURIComponent(svgIcon);
+        link.href = `data:image/svg+xml,${encoded}`;
+      } catch {
+        // ignore favicon errors
+      }
+    }
+  }, [isAdminLoginRoute, adminUser]);
+
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
   
   const handleVerificationSuccess = (student: Student, status: ApplicationStatus | StudentStatus, hasPaid: boolean, isExempt: boolean = false, paymentType: 'initial' | 'doc_access' = 'initial') => {
