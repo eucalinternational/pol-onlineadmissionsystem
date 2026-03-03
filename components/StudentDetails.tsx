@@ -258,7 +258,36 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student: initialStudent
     }
     
     lastScrollTopRef.current = st <= 0 ? 0 : st;
-  }, []);
+
+    // On mobile & tablet, smoothly update the active section / progress bar while scrolling
+    if (window.innerWidth < 1024) {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+
+      const containerTop = container.offsetTop;
+      const viewportOffset = containerTop;
+      const referenceY = st + container.clientHeight * 0.2; // bias toward content near the top
+
+      let closestId: Page | null = null;
+      let closestDistance = Number.POSITIVE_INFINITY;
+
+      Object.entries(sectionRefs.current).forEach(([id, el]) => {
+        if (!el) return;
+        const sectionTop = el.offsetTop - viewportOffset;
+        const sectionHeight = el.offsetHeight || 1;
+        const sectionCenter = sectionTop + sectionHeight / 2;
+        const distance = Math.abs(sectionCenter - referenceY);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestId = id as Page;
+        }
+      });
+
+      if (closestId && closestId !== currentPage) {
+        setCurrentPage(closestId);
+      }
+    }
+  }, [currentPage]);
 
   const [isConfirmUnlockModalOpen, setIsConfirmUnlockModalOpen] = useState(false);
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);

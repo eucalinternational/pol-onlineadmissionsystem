@@ -514,9 +514,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ schoolSlug, admissionSlug, onVerifi
           <div className="text-center py-4">
               <h1 className="text-2xl font-extrabold text-gray-900 dark:text-gray-50">Portal Context Missing</h1>
               <p className="mt-4 text-gray-600 dark:text-gray-400">This link appears to be invalid or the school does not have an active admission group.</p>
-              <div className="mt-8">
-                  <button onClick={onSwitchToAdmin} className="text-sm font-bold text-indigo-600">Go to Admin Dashboard</button>
-              </div>
           </div>
       );
   }

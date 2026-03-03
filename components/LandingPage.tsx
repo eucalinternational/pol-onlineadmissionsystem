@@ -232,7 +232,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ toggleTheme, isDarkMode }) =>
           <div className="space-y-3 max-h-[420px] overflow-y-auto no-scrollbar">
             {!hasFilter && (
               <div className="text-center text-sm text-logip-text-subtle dark:text-dark-text-secondary py-10 px-4">
-                Start by searching for your school by <span className="font-semibold">name</span> or selecting a <span className="font-semibold">region</span>.
+                Search for your school by entering your school's <span className="font-semibold">name</span> or selecting your school's <span className="font-semibold">region</span>.
               </div>
             )}
 

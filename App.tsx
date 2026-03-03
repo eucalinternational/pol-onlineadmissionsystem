@@ -20,9 +20,10 @@ function App() {
 
   // Derive routing context from the URL
   // Student routes look like: /:schoolSlug/:admissionSlug
-  // Admin login route: /login/admin
-  const pathSegments = window.location.pathname.split('/').filter(Boolean);
-  const isAdminLoginRoute = pathSegments[0] === 'login' && pathSegments[1] === 'admin';
+  // Admin login route: strictly /login/admin (optionally with trailing slash)
+  const rawPath = window.location.pathname;
+  const pathSegments = rawPath.split('/').filter(Boolean);
+  const isAdminLoginRoute = rawPath === '/login/admin' || rawPath === '/login/admin/';
   const isLandingRoute = pathSegments.length === 0 && !isAdminLoginRoute;
   const schoolSlugFromPath = !isAdminLoginRoute && pathSegments.length >= 1 ? pathSegments[0] : undefined;
   const admissionSlugFromPath = !isAdminLoginRoute && pathSegments.length >= 2 ? pathSegments[1] : undefined;
@@ -136,21 +137,6 @@ function App() {
 
   const isDashboardView = (appMode === 'admin' && !!adminUser) || 
                           (appMode === 'student' && currentView === 'details');
-
-  // If someone visits /login or any other /login/* path that is NOT /login/admin,
-  // show a 404-style page instead of the student portal.
-  if (pathSegments[0] === 'login' && !isAdminLoginRoute) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-logip-bg dark:bg-background-dark p-4">
-        <div className="bg-logip-white dark:bg-report-dark rounded-xl border border-logip-border dark:border-report-border px-8 py-10 max-w-lg w-full text-center">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">404 - Not Found</h1>
-          <p className="text-base text-gray-600 dark:text-gray-400 mb-6">
-            The resource requested could not be found on this server.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   // Root path: show Packets Out landing page for selecting school
   if (isLandingRoute) {
